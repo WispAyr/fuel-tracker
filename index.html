@@ -291,6 +291,37 @@ header .container {
 .trend-down { background: var(--green-bg); color: var(--green); }
 .trend-stable { background: var(--blue-bg); color: var(--blue); }
 
+/* ── Filter bar ── */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.filter-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+  user-select: none;
+}
+.filter-toggle:hover { border-color: var(--green); color: var(--green); }
+.filter-toggle.active {
+  background: var(--green-bg);
+  border-color: var(--green);
+  color: var(--green);
+}
+
 /* ── Tabs ── */
 .tab-nav {
   display: flex;
@@ -412,6 +443,25 @@ tbody tr.closed-row td { opacity: 0.35; text-decoration: line-through; }
 .freshness-stale { background: var(--red-bg); color: var(--red); }
 .freshness-closed { background: #f3f4f6; color: #6b7280; }
 [data-theme="dark"] .freshness-closed { background: #21262d; color: #6e7681; }
+
+/* ── Open/Closed badges ── */
+.open-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 20px;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.open-badge.open { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+.open-badge.closed { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border); }
+.open-badge.closes-soon { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-border); }
+.open-badge.unknown { background: var(--bg-subtle); color: var(--text-muted); border: 1px solid var(--border); }
+
 .brand-badge {
   display: inline-flex;
   align-items: center;
@@ -438,6 +488,7 @@ tbody tr.closed-row td { opacity: 0.35; text-decoration: line-through; }
   margin-left: 2px;
 }
 .btn-sm:hover { border-color: var(--blue); color: var(--blue); }
+.btn-sm.report-btn:hover { border-color: var(--green); color: var(--green); }
 .cheapest-badge {
   display: inline-flex;
   align-items: center;
@@ -450,6 +501,55 @@ tbody tr.closed-row td { opacity: 0.35; text-decoration: line-through; }
   border-radius: 10px;
   margin-left: 4px;
 }
+
+/* ── Community Sightings ── */
+.community-section {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  margin-top: 8px;
+  font-size: 12px;
+}
+.community-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  gap: 8px;
+}
+.community-title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.sighting-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 5px 0;
+  border-top: 1px solid var(--border-light);
+}
+.sighting-item:first-of-type { border-top: none; }
+.sighting-time { font-size: 11px; color: var(--text-light); white-space: nowrap; }
+.sighting-fuel-yes { color: var(--green); font-weight: 600; }
+.sighting-fuel-no { color: var(--red); font-weight: 600; }
+.queue-pill {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  background: var(--border-light);
+  color: var(--text-muted);
+}
+.queue-none { background: var(--green-bg); color: var(--green); }
+.queue-short { background: var(--amber-bg); color: var(--amber); }
+.queue-long { background: var(--red-bg); color: var(--red); }
+.no-reports { color: var(--text-light); font-style: italic; font-size: 12px; }
 
 /* ── Charts ── */
 .chart-card {
@@ -612,6 +712,104 @@ tbody tr.closed-row td { opacity: 0.35; text-decoration: line-through; }
 }
 .modal-close:hover { color: var(--text); border-color: var(--text-muted); }
 
+/* ── Sighting Modal specific ── */
+.sighting-modal-content { display: flex; flex-direction: column; gap: 16px; }
+.sighting-station-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  padding: 10px 14px;
+  background: var(--bg-subtle);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+.toggle-group {
+  display: flex;
+  gap: 8px;
+}
+.toggle-btn {
+  flex: 1;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: all var(--transition);
+}
+.toggle-btn:hover { border-color: var(--blue); color: var(--text); }
+.toggle-btn.selected-yes { background: var(--green-bg); border-color: var(--green); color: var(--green); }
+.toggle-btn.selected-no { background: var(--red-bg); border-color: var(--red); color: var(--red); }
+.queue-group { display: flex; gap: 6px; flex-wrap: wrap; }
+.queue-btn {
+  flex: 1;
+  min-width: 80px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: all var(--transition);
+}
+.queue-btn:hover { border-color: var(--blue); }
+.queue-btn.selected { background: var(--blue-bg); border-color: var(--blue); color: var(--blue); }
+.note-input {
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  resize: none;
+  outline: none;
+  transition: border-color var(--transition);
+}
+.note-input:focus { border-color: var(--blue); }
+.note-counter { font-size: 11px; color: var(--text-light); text-align: right; margin-top: 4px; }
+.submit-btn {
+  background: var(--blue);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 12px 20px;
+  font-size: 14px;
+  font-family: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  width: 100%;
+  transition: opacity var(--transition);
+}
+.submit-btn:hover { opacity: 0.9; }
+.submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.field-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+  display: block;
+}
+.submit-success {
+  text-align: center;
+  padding: 24px;
+  color: var(--green);
+  font-size: 15px;
+  font-weight: 600;
+}
+.submit-success .success-icon { font-size: 40px; display: block; margin-bottom: 10px; }
+
 /* ── Footer ── */
 footer {
   margin-top: 48px;
@@ -643,39 +841,24 @@ footer {
   .stat-grid { grid-template-columns: repeat(3, 1fr); }
 }
 @media (max-width: 768px) {
-  /* Header — stack controls below logo */
   header .container { flex-wrap: wrap; }
   .header-controls { width: 100%; justify-content: space-between; gap: 6px; margin-top: 4px; }
   .fuel-select { flex: 1; min-width: 0; font-size: 13px; }
   .logo-text small { display: none; }
-
-  /* Hero */
   .hero { padding: 18px 0 4px; }
   .hero h2 { font-size: 22px; }
   .hero-sub { font-size: 13px; }
-
-  /* Stats */
   .stat-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
   .stat-card { padding: 14px; }
-
-  /* Supply */
   .supply-stats { margin-left: 0; width: 100%; }
   .supply-banner .container { flex-direction: column; align-items: flex-start; }
-
-  /* Charts + Map */
   .chart-grid { grid-template-columns: 1fr; }
   #map { height: 340px; }
-
-  /* Trend card — contain text */
   .stat-value { word-break: break-word; font-size: 22px; }
   .stat-detail { font-size: 12px; line-height: 1.4; }
-
-  /* Table */
   .table-wrap { margin: 0 -14px; padding: 0 14px; }
   .price-table th, .price-table td { padding: 10px 8px; font-size: 13px; }
   .price-table .station-name { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-  /* Tips */
   .tip-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 480px) {
@@ -686,19 +869,11 @@ footer {
   .stat-value { font-size: 18px; }
   .stat-label { font-size: 10px; }
   .stat-sub { font-size: 11px; }
-
-  /* Tabs — scroll horizontally, bigger touch targets */
   .tab-nav { gap: 4px; padding: 4px; }
   .tab-btn { padding: 10px 14px; font-size: 12px; min-height: 40px; white-space: nowrap; }
-
-  /* Supply */
   .supply-badge { flex-direction: column; align-items: flex-start; gap: 6px; padding: 10px 12px; }
   .supply-dots { margin-top: 4px; }
-
-  /* Map */
   #map { height: 280px; border-radius: 10px; }
-
-  /* Footer */
   footer { padding: 16px 0; font-size: 11px; }
   .footer-row { flex-direction: column; gap: 4px; text-align: center; }
 }
@@ -825,11 +1000,19 @@ footer {
 
     <!-- Table Tab -->
     <div class="tab-panel" id="panel-table">
+      <!-- Filter bar -->
+      <div class="filter-bar">
+        <button class="filter-toggle" id="openNowToggle" onclick="toggleOpenFilter()">
+          🟢 Open Now Only
+        </button>
+        <span id="filterCount" style="font-size:12px;color:var(--text-muted)"></span>
+      </div>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th onclick="sortTable('status')">Status</th>
+              <th onclick="sortTable('status')">Data</th>
+              <th onclick="sortTable('hours')">Hours</th>
               <th onclick="sortTable('name')">Station ↕</th>
               <th onclick="sortTable('brand')">Brand</th>
               <th onclick="sortTable('distance')">Dist ↕</th>
@@ -841,7 +1024,7 @@ footer {
             </tr>
           </thead>
           <tbody id="stationTableBody">
-            <tr><td colspan="9" class="loading-state"><div class="spinner"></div><br>Loading stations…</td></tr>
+            <tr><td colspan="10" class="loading-state"><div class="spinner"></div><br>Loading stations…</td></tr>
           </tbody>
         </table>
       </div>
@@ -943,6 +1126,7 @@ footer {
         <p>Prices sourced from the <strong>UK Government Fuel Finder scheme</strong> (launched February 2026). All UK fuel stations must update prices within <strong>30 minutes</strong> of any change — making this the most accurate real-time fuel data available.</p>
         <p>Data aggregated via <a href="https://fuelcosts.co.uk" target="_blank">fuelcosts.co.uk</a>. Coverage: 20-mile radius from Ayr town centre, spanning KA1–KA3 (Kilmarnock), KA6–KA8 (Ayr), KA9–KA11 (Irvine &amp; Saltcoats), KA20–KA22 (Troon), and KA30 (Largs).</p>
         <p><strong>Freshness:</strong> 🟢 &lt;24h (confirmed active) · 🟡 24–48h · 🔴 48h+ (possibly closed/out of stock) · ⚫ Confirmed closed</p>
+        <p><strong>Opening hours:</strong> Based on station-reported usual hours. Community sightings provide real-time ground truth.</p>
         <div class="source-links">
           <a class="source-link" href="https://www.gov.uk/guidance/fuel-finder" target="_blank">🏛️ Gov Fuel Finder</a>
           <a class="source-link" href="https://www.petrolprices.co.uk/locations/ayr" target="_blank">🔍 PetrolPrices (Ayr)</a>
@@ -964,6 +1148,53 @@ footer {
       <button class="modal-close" onclick="closeHistoryModal()">✕</button>
     </div>
     <canvas id="historyChart" height="220"></canvas>
+  </div>
+</div>
+
+<!-- Sighting Report Modal -->
+<div class="modal-overlay" id="sightingModal">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <h3>👥 Community Report</h3>
+      <button class="modal-close" onclick="closeSightingModal()">✕</button>
+    </div>
+    <div id="sightingFormWrap">
+      <div class="sighting-modal-content">
+        <div class="sighting-station-name" id="sightingStationName">Station</div>
+
+        <div>
+          <span class="field-label">⛽ Fuel available?</span>
+          <div class="toggle-group">
+            <button class="toggle-btn" id="fuelYesBtn" onclick="selectFuelAvail(true)">✅ Fuel Available</button>
+            <button class="toggle-btn" id="fuelNoBtn" onclick="selectFuelAvail(false)">❌ No Fuel</button>
+          </div>
+        </div>
+
+        <div>
+          <span class="field-label">🚗 Queue length?</span>
+          <div class="queue-group">
+            <button class="queue-btn" id="queueNoneBtn" onclick="selectQueue('none')">No Queue</button>
+            <button class="queue-btn" id="queueShortBtn" onclick="selectQueue('short')">Short Queue</button>
+            <button class="queue-btn" id="queueLongBtn" onclick="selectQueue('long')">Long Queue</button>
+          </div>
+        </div>
+
+        <div>
+          <span class="field-label">📝 Note (optional)</span>
+          <textarea class="note-input" id="sightingNote" rows="2" maxlength="100" placeholder="e.g. pumps 3 and 4 are out of order…" oninput="updateNoteCounter()"></textarea>
+          <div class="note-counter"><span id="noteCounter">0</span>/100</div>
+        </div>
+
+        <div id="sightingError" style="color:var(--red);font-size:13px;display:none"></div>
+        <button class="submit-btn" id="submitSightingBtn" onclick="submitSighting()">Submit Report</button>
+      </div>
+    </div>
+    <div id="sightingSuccess" style="display:none">
+      <div class="submit-success">
+        <span class="success-icon">🙌</span>
+        Thanks! Your report helps others find fuel faster.
+      </div>
+    </div>
   </div>
 </div>
 
@@ -996,6 +1227,13 @@ let currentFuel = 'E10';
 let map, markersLayer;
 let mapInitialised = false;
 let trendChart, brandChart, dayChart, historyChartInstance;
+let showOpenOnly = false;
+
+// ── Sighting modal state ──
+let sightingStationId = '';
+let sightingStationNameStr = '';
+let sightingHasFuel = null;    // true/false/null
+let sightingQueue = null;      // 'none'/'short'/'long'/null
 
 // ── Theme ──
 function applyTheme(dark) {
@@ -1008,7 +1246,6 @@ function toggleTheme() {
   localStorage.setItem('theme', !isDark ? 'dark' : 'light');
   if (map) setTimeout(() => map.invalidateSize(), 150);
 }
-// Default: light mode
 const savedTheme = localStorage.getItem('theme');
 if (savedTheme === 'dark') applyTheme(true);
 
@@ -1032,6 +1269,14 @@ function showTab(name, btn) {
 function changeFuel() {
   currentFuel = document.getElementById('fuelSelect').value;
   loadStations();
+}
+
+// ── Open now filter ──
+function toggleOpenFilter() {
+  showOpenOnly = !showOpenOnly;
+  const btn = document.getElementById('openNowToggle');
+  btn.classList.toggle('active', showOpenOnly);
+  renderTable();
 }
 
 // ── Helpers ──
@@ -1083,6 +1328,58 @@ function brandBadge(brand) {
   return `<span class="brand-badge" style="background:${color}">${letter}</span>`;
 }
 
+// ── Open status badge ──
+function openBadgeHtml(s) {
+  const status = s.open_status || '';
+  const isOpen = s.is_open_now;
+  const nc = s.next_change || {};
+  if (isOpen === null || isOpen === undefined) {
+    return `<span class="open-badge unknown">?</span>`;
+  }
+  if (!isOpen) {
+    return `<span class="open-badge closed">CLOSED</span>`;
+  }
+  // Check closes soon (within 60 mins)
+  if (nc.type === 'closes' && nc.minutes <= 60) {
+    return `<span class="open-badge closes-soon" title="${status}">CLOSES SOON</span>`;
+  }
+  if (status === 'Open 24hrs' || status === 'Open 24hrs today') {
+    return `<span class="open-badge open">24HRS</span>`;
+  }
+  return `<span class="open-badge open">OPEN</span>`;
+}
+
+// ── Community sighting HTML ──
+function sightingHtml(sighting) {
+  if (!sighting) return '<span class="no-reports">No recent reports</span>';
+  const queueLabels = { none: 'No queue', short: 'Short queue', long: 'Long queue' };
+  const queueClass = { none: 'queue-none', short: 'queue-short', long: 'queue-long' };
+  const mins = sighting.minutes_ago;
+  const timeAgo = mins < 2 ? 'just now' : mins < 60 ? `${mins} min ago` : `${Math.round(mins/60)}h ago`;
+  const fuelStr = sighting.has_fuel
+    ? '<span class="sighting-fuel-yes">⛽ Fuel available</span>'
+    : '<span class="sighting-fuel-no">❌ No fuel</span>';
+  const queueStr = `<span class="queue-pill ${queueClass[sighting.queue_length] || ''}">${queueLabels[sighting.queue_length] || sighting.queue_length}</span>`;
+  const noteStr = sighting.note ? `<span style="color:var(--text-muted);font-size:11px"> — ${sighting.note}</span>` : '';
+  return `<div class="sighting-item">
+    <span class="sighting-time">${timeAgo}</span>
+    <span>${fuelStr} ${queueStr}${noteStr}</span>
+  </div>`;
+}
+
+function communitySectionHtml(s) {
+  const sighting = s.latest_sighting;
+  const stationId = s.node_id || '';
+  const name = stationName(s).replace(/'/g, "\\'");
+  return `<div class="community-section">
+    <div class="community-header">
+      <span class="community-title">👥 Community Reports</span>
+      <button class="btn-sm report-btn" onclick="openSightingModal('${stationId}','${name}');event.stopPropagation()">📍 I'm here</button>
+    </div>
+    ${sightingHtml(sighting)}
+  </div>`;
+}
+
 // ── Supply Banner ──
 function updateSupplyBanner(health) {
   const banner = document.getElementById('supplyBanner');
@@ -1090,8 +1387,8 @@ function updateSupplyBanner(health) {
   const detail = document.getElementById('supplyDetail');
   const stats = document.getElementById('supplyStats');
   const freshPct = health.fresh_pct || 0;
+  const totalOpen = health.total_open ?? health.total;
 
-  // More nuanced status — only go alert if really bad
   let status = health.status || 'normal';
   if (status === 'alert' && freshPct > 50) status = 'watch';
 
@@ -1099,7 +1396,7 @@ function updateSupplyBanner(health) {
   const statusLabel = { normal: 'Supply Normal', watch: 'Supply Watch', alert: 'Supply Alert' }[status] || 'Supply Normal';
   const emoji = { normal: '✓', watch: '⚠', alert: '!' }[status] || '✓';
   label.textContent = `${emoji} ${statusLabel}`;
-  detail.textContent = `${freshPct}% of stations with fresh prices`;
+  detail.textContent = `${freshPct}% fresh · ${totalOpen} open now`;
   stats.innerHTML = `
     <span class="supply-stat">🟢 ${health.fresh || 0}</span>
     <span class="supply-stat">🟡 ${health.aging || 0}</span>
@@ -1114,7 +1411,6 @@ function initMap() {
   mapInitialised = true;
   try {
     map = L.map('map', { zoomControl: true }).setView([55.46, -4.63], 11);
-    // CartoDB Positron — clean light tiles
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
       subdomains: 'abcd',
@@ -1152,12 +1448,27 @@ function updateMap() {
       pricesHtml += `<tr><td style="padding:3px 10px 3px 0;color:#6b7280;font-size:12px">${label}</td><td style="font-weight:700;font-size:13px">${p.price ? p.price.toFixed(1) + 'p' : '—'}</td></tr>`;
     });
 
+    const openStatus = s.open_status || '';
+    const openBadge = openBadgeHtml(s);
+    const sighting = s.latest_sighting;
+    const sightingLine = sighting
+      ? `${sighting.has_fuel ? '⛽ Fuel reported' : '❌ No fuel reported'} · ${sighting.minutes_ago < 60 ? sighting.minutes_ago + ' min ago' : Math.round(sighting.minutes_ago/60) + 'h ago'}`
+      : 'No community reports';
+    const stationIdSafe = (s.node_id || '').replace(/'/g, "\\'");
+    const nameSafe = name.replace(/'/g, "\\'");
+
     const popup = `
-      <div style="min-width:190px;font-family:Inter,sans-serif">
+      <div style="min-width:200px;font-family:Inter,sans-serif">
         <div style="font-weight:700;font-size:14px;margin-bottom:2px">${name}</div>
-        <div style="font-size:12px;color:#6b7280;margin-bottom:8px">${[brand, city, dist].filter(Boolean).join(' · ')}</div>
+        <div style="font-size:12px;color:#6b7280;margin-bottom:6px">${[brand, city, dist].filter(Boolean).join(' · ')}</div>
+        <div style="margin-bottom:8px">${openBadge} <span style="font-size:11px;color:#6b7280;margin-left:4px">${openStatus}</span></div>
         <table style="width:100%;border-collapse:collapse">${pricesHtml}</table>
         <div style="font-size:11px;color:#9ca3af;margin-top:6px;padding-top:6px;border-top:1px solid #f3f4f6">${freshness.icon || ''} ${freshness.label || ''} ${freshness.detail ? '— ' + freshness.detail : ''}</div>
+        <div style="margin-top:8px;padding-top:8px;border-top:1px solid #f3f4f6">
+          <div style="font-size:11px;font-weight:600;color:#6b7280;margin-bottom:4px">👥 Community</div>
+          <div style="font-size:11px;color:#374151">${sightingLine}</div>
+          <button onclick="openSightingModal('${stationIdSafe}','${nameSafe}')" style="margin-top:6px;padding:4px 10px;border:1px solid #e5e7eb;border-radius:6px;background:none;font-size:11px;cursor:pointer;font-family:inherit">📍 I'm here — Report</button>
+        </div>
       </div>`;
 
     const isSelected = price != null && price === Math.min(...allPrices);
@@ -1167,7 +1478,7 @@ function updateMap() {
       color: isSelected ? '#1a1a2e' : 'rgba(255,255,255,0.8)',
       weight: isSelected ? 2.5 : 1.5,
       fillOpacity: 0.88
-    }).bindPopup(popup, { maxWidth: 240 });
+    }).bindPopup(popup, { maxWidth: 260 });
     markersLayer.addLayer(marker);
   });
 
@@ -1205,11 +1516,25 @@ function renderTable() {
   const cheapE10 = allE10.length ? Math.min(...allE10) : null;
   const cheapDiesel = allDiesel.length ? Math.min(...allDiesel) : null;
 
+  // Apply open now filter
+  let filtered = showOpenOnly ? stations.filter(s => s.is_open_now === true) : stations;
+
+  // Update filter count
+  const openCount = stations.filter(s => s.is_open_now === true).length;
+  document.getElementById('filterCount').textContent = showOpenOnly
+    ? `Showing ${filtered.length} open stations`
+    : `${openCount} of ${stations.length} open now`;
+
   const statusOrder = { fresh: 0, aging: 1, stale: 2, closed: 3 };
-  const sorted = [...stations].sort((a, b) => {
+  const sorted = [...filtered].sort((a, b) => {
     const fa = a.freshness || {}, fb = b.freshness || {};
     const sa = statusOrder[fa.status] ?? 2, sb = statusOrder[fb.status] ?? 2;
-    if (sa !== sb) return sa - sb;
+    if (sortField === 'hours') {
+      const oa = a.is_open_now === true ? 0 : a.is_open_now === false ? 1 : 2;
+      const ob = b.is_open_now === true ? 0 : b.is_open_now === false ? 1 : 2;
+      return sortAsc ? oa - ob : ob - oa;
+    }
+    if (sortField === 'status' && sa !== sb) return sortAsc ? sa - sb : sb - sa;
     let va, vb;
     switch (sortField) {
       case 'name': return sortAsc ? stationName(a).localeCompare(stationName(b)) : stationName(b).localeCompare(stationName(a));
@@ -1248,11 +1573,21 @@ function renderTable() {
     const freshnessClass = { fresh:'freshness-fresh', aging:'freshness-aging', stale:'freshness-stale', closed:'freshness-closed' }[f.status] || '';
     const cheapestBadge = isCheapest ? '<span class="cheapest-badge">★ CHEAPEST</span>' : '';
 
+    const openBadge = openBadgeHtml(s);
+    const openStatusText = s.open_status || '';
+    const stationIdSafe = (s.node_id || '').replace(/'/g, "\\'");
+    const nameSafe = name.replace(/'/g, "\\'");
+
     return `<tr class="${rowClass}">
       <td><span class="freshness-badge ${freshnessClass}">${f.icon || ''} ${f.label || ''}</span></td>
       <td>
+        <div>${openBadge}</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:2px;white-space:nowrap;max-width:100px;overflow:hidden;text-overflow:ellipsis" title="${openStatusText}">${openStatusText}</div>
+      </td>
+      <td>
         <strong>${name}</strong>${cheapestBadge}
         ${city ? `<br><span style="font-size:11px;color:var(--text-muted)">${city}</span>` : ''}
+        ${communitySectionHtml(s)}
       </td>
       <td>${brandBadge(brand)}<span style="font-size:13px">${brand}</span></td>
       <td style="color:var(--text-muted);font-size:13px">${dist}</td>
@@ -1262,7 +1597,7 @@ function renderTable() {
       <td style="font-size:12px;color:var(--text-muted)">${f.hours_since_update != null ? (f.hours_since_update < 1 ? '<1h' : Math.round(f.hours_since_update) + 'h') + ' ago' : '—'}</td>
       <td>
         ${lat ? `<button class="btn-sm" onclick="flyToStation(${lat},${lon})" title="Show on map">📍</button>` : ''}
-        <button class="btn-sm" onclick="showHistory('${s.node_id}','${name.replace(/'/g,"\\'")}')">📈</button>
+        <button class="btn-sm" onclick="showHistory('${s.node_id}','${nameSafe}')">📈</button>
       </td>
     </tr>`;
   }).join('');
@@ -1314,6 +1649,102 @@ async function showHistory(nodeId, name) {
 
 function closeHistoryModal() {
   document.getElementById('historyModal').classList.remove('active');
+}
+
+// ── Sighting Modal ──
+function openSightingModal(stationId, name) {
+  sightingStationId = stationId;
+  sightingStationNameStr = name;
+  sightingHasFuel = null;
+  sightingQueue = null;
+
+  document.getElementById('sightingStationName').textContent = '📍 ' + name;
+  document.getElementById('fuelYesBtn').className = 'toggle-btn';
+  document.getElementById('fuelNoBtn').className = 'toggle-btn';
+  document.querySelectorAll('.queue-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('sightingNote').value = '';
+  document.getElementById('noteCounter').textContent = '0';
+  document.getElementById('sightingError').style.display = 'none';
+  document.getElementById('sightingFormWrap').style.display = 'block';
+  document.getElementById('sightingSuccess').style.display = 'none';
+  document.getElementById('sightingModal').classList.add('active');
+}
+
+function closeSightingModal() {
+  document.getElementById('sightingModal').classList.remove('active');
+}
+
+function selectFuelAvail(val) {
+  sightingHasFuel = val;
+  document.getElementById('fuelYesBtn').className = 'toggle-btn' + (val === true ? ' selected-yes' : '');
+  document.getElementById('fuelNoBtn').className = 'toggle-btn' + (val === false ? ' selected-no' : '');
+}
+
+function selectQueue(val) {
+  sightingQueue = val;
+  document.querySelectorAll('.queue-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('queueNoneBtn').classList.toggle('selected', val === 'none');
+  document.getElementById('queueShortBtn').classList.toggle('selected', val === 'short');
+  document.getElementById('queueLongBtn').classList.toggle('selected', val === 'long');
+}
+
+function updateNoteCounter() {
+  const v = document.getElementById('sightingNote').value;
+  document.getElementById('noteCounter').textContent = v.length;
+}
+
+async function submitSighting() {
+  const errEl = document.getElementById('sightingError');
+  errEl.style.display = 'none';
+
+  if (sightingHasFuel === null) {
+    errEl.textContent = 'Please select whether fuel is available.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (!sightingQueue) {
+    errEl.textContent = 'Please select a queue length.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const btn = document.getElementById('submitSightingBtn');
+  btn.disabled = true;
+  btn.textContent = 'Submitting…';
+
+  try {
+    const res = await fetch('/api/sighting', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        station_id: sightingStationId,
+        has_fuel: sightingHasFuel,
+        queue_length: sightingQueue,
+        note: document.getElementById('sightingNote').value.trim() || null,
+      })
+    });
+    if (res.status === 429) {
+      errEl.textContent = 'You reported this station recently. Please wait 15 minutes.';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Submit Report';
+      return;
+    }
+    if (!res.ok) {
+      const d = await res.json();
+      throw new Error(d.detail || 'Server error');
+    }
+    document.getElementById('sightingFormWrap').style.display = 'none';
+    document.getElementById('sightingSuccess').style.display = 'block';
+    // Refresh stations to pick up new sighting
+    setTimeout(() => loadStations(), 800);
+    setTimeout(() => closeSightingModal(), 3000);
+  } catch (e) {
+    errEl.textContent = e.message || 'Failed to submit. Please try again.';
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Submit Report';
+  }
 }
 
 // ── Data Loading ──
@@ -1380,14 +1811,12 @@ async function loadTrends() {
 
     const analysis = e10Trends.analysis || {};
     const trendEl = document.getElementById('trendValue');
-    // Keep card text short — direction + rate only
     const arrow = analysis.direction === 'rising' ? '↑' : analysis.direction === 'falling' ? '↓' : '→';
     const label = (analysis.direction || 'Stable').charAt(0).toUpperCase() + (analysis.direction || 'stable').slice(1);
     const rate = analysis.change_7d != null ? ` (${analysis.change_7d > 0 ? '+' : ''}${analysis.change_7d.toFixed(1)}p/wk)` : '';
     trendEl.textContent = `${arrow} ${label}${rate}`;
     trendEl.className = 'stat-value' + (analysis.direction === 'rising' ? ' red' : analysis.direction === 'falling' ? ' green' : '');
     document.getElementById('trendDetail').textContent = analysis.anomaly ? '⚠ Unusual price movement' : 'Based on local averages';
-
     document.getElementById('tipTrend').textContent = analysis.description || '—';
     document.getElementById('tipTrendDetail').textContent = `7-day change: ${(analysis.change_7d || 0) > 0 ? '+' : ''}${(analysis.change_7d || 0).toFixed(1)}p/litre`;
 
@@ -1537,9 +1966,12 @@ dateAdapterScript.onload = () => {
 };
 document.head.appendChild(dateAdapterScript);
 
-// Close modal on backdrop click
+// Close modals on backdrop click
 document.getElementById('historyModal').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeHistoryModal();
+});
+document.getElementById('sightingModal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeSightingModal();
 });
 </script>
 </body>

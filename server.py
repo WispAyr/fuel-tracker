@@ -1,13 +1,17 @@
 """Fuel Price Tracker for Ayr & Ayrshire — FastAPI backend with caching proxy."""
 
 import argparse
+import hashlib
+import sqlite3
 import time
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import httpx
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
+from pydantic import BaseModel
 
 app = FastAPI(title="Fuel Price Tracker — Ayr & Ayrshire")
 
@@ -17,8 +21,39 @@ DEFAULT_LON = -4.629
 DEFAULT_RADIUS = 20
 CACHE_TTL = 300  # 5 minutes
 
+UK_TZ = ZoneInfo("Europe/London")
+
 _cache: dict[str, tuple[float, any]] = {}
 
+DB_PATH = Path(__file__).parent / "sightings.db"
+
+DAY_NAMES = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+
+
+# ── SQLite Sightings DB ────────────────────────────────
+
+def _init_db():
+    conn = sqlite3.connect(DB_PATH)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS sightings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            station_id TEXT NOT NULL,
+            timestamp TEXT NOT NULL,
+            ip_hash TEXT NOT NULL,
+            has_fuel INTEGER NOT NULL,
+            queue_length TEXT NOT NULL,
+            note TEXT
+        )
+    """)
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_station_ts ON sightings(station_id, timestamp)")
+    conn.commit()
+    conn.close()
+
+
+_init_db()
+
+
+# ── Cache helpers ──────────────────────────────────────
 
 def _cache_key(url: str, params: dict | None = None) -> str:
     parts = [url]
@@ -42,6 +77,121 @@ async def _fetch(path: str, params: dict | None = None) -> dict:
         _cache[key] = (now, data)
         return data
 
+
+# ── Opening Hours ──────────────────────────────────────
+
+def _parse_time(ts: str) -> tuple[int, int]:
+    """Parse HH:MM:SS or HH:MM → (hour, minute)."""
+    parts = ts.split(":")
+    return int(parts[0]), int(parts[1])
+
+
+def _format_time_ampm(hour: int, minute: int) -> str:
+    """Format 24h hour/minute to 12h AM/PM."""
+    suffix = "AM" if hour < 12 else "PM"
+    h = hour % 12 or 12
+    if minute == 0:
+        return f"{h}:00 {suffix}"
+    return f"{h}:{minute:02d} {suffix}"
+
+
+def _compute_open_status(station: dict) -> dict:
+    """Compute is_open_now, open_status, and next_change for a station."""
+    if station.get("is_permanently_closed"):
+        return {"is_open_now": False, "open_status": "Permanently Closed", "next_change": None}
+    if station.get("is_temporarily_closed"):
+        return {"is_open_now": False, "open_status": "Temporarily Closed", "next_change": None}
+
+    opening_times = station.get("opening_times") or {}
+    usual_days = opening_times.get("usual_days") or {}
+
+    if not usual_days:
+        return {"is_open_now": None, "open_status": "Hours unknown", "next_change": None}
+
+    now_uk = datetime.now(UK_TZ)
+    # Python weekday(): 0=Monday … 6=Sunday
+    today_name = DAY_NAMES[now_uk.weekday()]
+    today_info = usual_days.get(today_name) or {}
+
+    if today_info.get("is_24_hours"):
+        # Check if every day is 24h
+        all_24 = all((v or {}).get("is_24_hours") for v in usual_days.values())
+        if all_24:
+            return {"is_open_now": True, "open_status": "Open 24hrs", "next_change": None}
+        # 24h today but not always
+        return {"is_open_now": True, "open_status": "Open 24hrs today", "next_change": None}
+
+    if not today_info.get("open") or not today_info.get("close"):
+        # No hours for today → closed
+        # Find next open day
+        for i in range(1, 8):
+            day_idx = (now_uk.weekday() + i) % 7
+            day_name = DAY_NAMES[day_idx]
+            day_info = usual_days.get(day_name) or {}
+            if day_info.get("is_24_hours") or (day_info.get("open") and day_info.get("close")):
+                if day_info.get("is_24_hours"):
+                    open_str = "midnight"
+                else:
+                    oh, om = _parse_time(day_info["open"])
+                    open_str = _format_time_ampm(oh, om)
+                day_label = day_name.capitalize() if i > 1 else "tomorrow"
+                if i == 1:
+                    day_label = "tomorrow"
+                return {
+                    "is_open_now": False,
+                    "open_status": f"Closed — Opens {open_str} {day_label}",
+                    "next_change": {"type": "opens", "day": day_name, "time": open_str},
+                }
+        return {"is_open_now": False, "open_status": "Closed today", "next_change": None}
+
+    # Parse today's open/close
+    open_h, open_m = _parse_time(today_info["open"])
+    close_h, close_m = _parse_time(today_info["close"])
+
+    now_minutes = now_uk.hour * 60 + now_uk.minute
+    open_minutes = open_h * 60 + open_m
+    close_minutes = close_h * 60 + close_m
+
+    if open_minutes <= now_minutes < close_minutes:
+        # Open — how long until close?
+        mins_to_close = close_minutes - now_minutes
+        close_str = _format_time_ampm(close_h, close_m)
+        status = f"Open until {close_str}"
+        return {
+            "is_open_now": True,
+            "open_status": status,
+            "next_change": {"type": "closes", "minutes": mins_to_close, "time": close_str},
+        }
+    elif now_minutes < open_minutes:
+        # Not yet open today
+        open_str = _format_time_ampm(open_h, open_m)
+        return {
+            "is_open_now": False,
+            "open_status": f"Closed — Opens {open_str}",
+            "next_change": {"type": "opens", "time": open_str, "minutes": open_minutes - now_minutes},
+        }
+    else:
+        # Closed for the day — find next open
+        for i in range(1, 8):
+            day_idx = (now_uk.weekday() + i) % 7
+            day_name = DAY_NAMES[day_idx]
+            day_info = usual_days.get(day_name) or {}
+            if day_info.get("is_24_hours") or (day_info.get("open") and day_info.get("close")):
+                if day_info.get("is_24_hours"):
+                    open_str = "midnight"
+                else:
+                    oh, om = _parse_time(day_info["open"])
+                    open_str = _format_time_ampm(oh, om)
+                day_label = "tomorrow" if i == 1 else day_name.capitalize()
+                return {
+                    "is_open_now": False,
+                    "open_status": f"Closed — Opens {open_str} {day_label}",
+                    "next_change": {"type": "opens", "day": day_name, "time": open_str},
+                }
+        return {"is_open_now": False, "open_status": "Closed", "next_change": None}
+
+
+# ── Freshness ──────────────────────────────────────────
 
 def _station_freshness(station: dict) -> dict:
     """Compute freshness status for a station."""
@@ -88,14 +238,21 @@ def _station_freshness(station: dict) -> dict:
                 "detail": "Not updated in 72h+ — likely closed or out of fuel"}
 
 
+# ── Supply Health ──────────────────────────────────────
+
 def _supply_health(stations: list) -> dict:
-    """Calculate area supply health score."""
+    """Calculate area supply health score. Only counts OPEN stations."""
+    # Filter to open stations only for health calculation
+    open_stations = [s for s in stations if s.get("open_status_data", {}).get("is_open_now") is not False]
     total = len(stations)
+    total_open = len(open_stations)
+
     if total == 0:
         return {"score": 0, "status": "alert", "label": "NO DATA", "emoji": "🚨",
-                "fresh": 0, "aging": 0, "stale": 0, "closed": 0, "total": 0, "fresh_pct": 0, "closed_pct": 0}
+                "fresh": 0, "aging": 0, "stale": 0, "closed": 0, "total": 0,
+                "total_open": 0, "fresh_pct": 0, "closed_pct": 0}
 
-    fresh = aging = stale = closed = 0
+    fresh = aging = stale = closed_count = 0
     for s in stations:
         f = _station_freshness(s)
         if f["status"] == "fresh":
@@ -103,12 +260,14 @@ def _supply_health(stations: list) -> dict:
         elif f["status"] == "aging":
             aging += 1
         elif f["status"] == "closed":
-            closed += 1
+            closed_count += 1
         else:
             stale += 1
 
-    fresh_pct = (fresh / total) * 100
-    closed_pct = (closed / total) * 100
+    # Health based on open stations only
+    base = total_open if total_open > 0 else total
+    fresh_pct = (fresh / base) * 100
+    closed_pct = (closed_count / total) * 100
 
     if fresh_pct > 80 and closed_pct < 5:
         status, label, emoji = "normal", "NORMAL", "✅"
@@ -122,10 +281,13 @@ def _supply_health(stations: list) -> dict:
 
     return {
         "score": score, "status": status, "label": label, "emoji": emoji,
-        "fresh": fresh, "aging": aging, "stale": stale, "closed": closed,
-        "total": total, "fresh_pct": round(fresh_pct, 1), "closed_pct": round(closed_pct, 1),
+        "fresh": fresh, "aging": aging, "stale": stale, "closed": closed_count,
+        "total": total, "total_open": total_open,
+        "fresh_pct": round(fresh_pct, 1), "closed_pct": round(closed_pct, 1),
     }
 
+
+# ── Price Trend Analysis ───────────────────────────────
 
 def _price_trend_analysis(trends: list) -> dict:
     """Analyse price trend data for anomalies and direction."""
@@ -177,6 +339,30 @@ def _price_trend_analysis(trends: list) -> dict:
     return {"direction": direction, "symbol": symbol, "change_7d": change_7d, "anomaly": anomaly, "description": desc}
 
 
+# ── Latest Sighting ────────────────────────────────────
+
+def _latest_sighting(station_id: str) -> dict | None:
+    """Get the most recent sighting in the last 24h for a station."""
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+    row = conn.execute(
+        "SELECT * FROM sightings WHERE station_id=? AND timestamp>? ORDER BY timestamp DESC LIMIT 1",
+        (station_id, cutoff)
+    ).fetchone()
+    conn.close()
+    if not row:
+        return None
+    ts = datetime.fromisoformat(row["timestamp"])
+    minutes_ago = int((datetime.now(timezone.utc) - ts).total_seconds() / 60)
+    return {
+        "minutes_ago": minutes_ago,
+        "has_fuel": bool(row["has_fuel"]),
+        "queue_length": row["queue_length"],
+        "note": row["note"],
+    }
+
+
 # ── Pages ──────────────────────────────────────────────
 
 @app.get("/")
@@ -197,9 +383,15 @@ async def stations(
     data = await _fetch("/stations", {
         "lat": lat, "lon": lon, "radius": radius, "fuel": fuel, "sort": sort,
     })
-    # Enrich with freshness data
+    # Enrich with freshness + open status + latest sighting
     for s in data.get("stations", []):
         s["freshness"] = _station_freshness(s)
+        open_data = _compute_open_status(s)
+        s["open_status_data"] = open_data
+        s["is_open_now"] = open_data["is_open_now"]
+        s["open_status"] = open_data["open_status"]
+        s["next_change"] = open_data["next_change"]
+        s["latest_sighting"] = _latest_sighting(s.get("node_id", ""))
     # Add supply health
     data["supply_health"] = _supply_health(data.get("stations", []))
     return data
@@ -236,7 +428,6 @@ async def crude_oil():
     """Attempt to fetch crude oil price. Falls back to link."""
     try:
         async with httpx.AsyncClient(timeout=10) as client:
-            # Try exchangerate.host for GBP/USD rate
             r = await client.get("https://open.er-api.com/v6/latest/USD")
             if r.status_code == 200:
                 fx_data = r.json()
@@ -258,6 +449,80 @@ async def crude_oil():
         }
 
 
+# ── Community Sightings ────────────────────────────────
+
+class SightingBody(BaseModel):
+    station_id: str
+    has_fuel: bool
+    queue_length: str  # "none" | "short" | "long"
+    note: str | None = None
+
+
+@app.post("/api/sighting")
+async def post_sighting(body: SightingBody, request: Request):
+    # Validate queue_length
+    if body.queue_length not in ("none", "short", "long"):
+        raise HTTPException(status_code=422, detail="queue_length must be none/short/long")
+
+    # Hash the IP (don't store raw)
+    client_ip = request.client.host if request.client else "unknown"
+    forwarded = request.headers.get("x-forwarded-for", "")
+    real_ip = forwarded.split(",")[0].strip() if forwarded else client_ip
+    ip_hash = hashlib.sha256(real_ip.encode()).hexdigest()
+
+    # Rate limit: 1 per station per IP per 15 minutes
+    conn = sqlite3.connect(DB_PATH)
+    cutoff = (datetime.now(timezone.utc) - timedelta(minutes=15)).isoformat()
+    existing = conn.execute(
+        "SELECT id FROM sightings WHERE station_id=? AND ip_hash=? AND timestamp>?",
+        (body.station_id, ip_hash, cutoff)
+    ).fetchone()
+
+    if existing:
+        conn.close()
+        raise HTTPException(status_code=429, detail="You've already reported this station recently. Please wait 15 minutes.")
+
+    # Truncate note
+    note = (body.note or "").strip()[:100] or None
+
+    now_ts = datetime.now(timezone.utc).isoformat()
+    conn.execute(
+        "INSERT INTO sightings (station_id, timestamp, ip_hash, has_fuel, queue_length, note) VALUES (?,?,?,?,?,?)",
+        (body.station_id, now_ts, ip_hash, int(body.has_fuel), body.queue_length, note)
+    )
+    conn.commit()
+    conn.close()
+
+    return {"ok": True, "message": "Thanks! Your report helps others."}
+
+
+@app.get("/api/sightings")
+async def get_sightings(station_id: str):
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+    rows = conn.execute(
+        "SELECT timestamp, has_fuel, queue_length, note FROM sightings WHERE station_id=? AND timestamp>? ORDER BY timestamp DESC",
+        (station_id, cutoff)
+    ).fetchall()
+    conn.close()
+
+    now = datetime.now(timezone.utc)
+    result = []
+    for r in rows:
+        ts = datetime.fromisoformat(r["timestamp"])
+        mins = int((now - ts).total_seconds() / 60)
+        result.append({
+            "minutes_ago": mins,
+            "has_fuel": bool(r["has_fuel"]),
+            "queue_length": r["queue_length"],
+            "note": r["note"],
+        })
+    return {"sightings": result, "count": len(result)}
+
+
+# ── Nuro integration ───────────────────────────────────
+
 @app.get("/api/nuro")
 async def nuro():
     """Compact summary for nuro dashboard integration."""
@@ -268,6 +533,11 @@ async def nuro():
     all_stations = stations_data.get("stations", [])
     if not all_stations:
         return JSONResponse({"error": "No station data available"}, status_code=503)
+
+    # Enrich with open status
+    for s in all_stations:
+        open_data = _compute_open_status(s)
+        s["open_status_data"] = open_data
 
     # Cheapest E10 and diesel
     cheapest_e10 = {"price": 9999, "station": "", "updated": ""}
@@ -295,7 +565,7 @@ async def nuro():
     avg_e10 = round(sum(e10_prices) / len(e10_prices), 1) if e10_prices else None
     avg_diesel = round(sum(diesel_prices) / len(diesel_prices), 1) if diesel_prices else None
 
-    # Supply health
+    # Supply health (with open status)
     health = _supply_health(all_stations)
 
     # Price trend
@@ -315,13 +585,13 @@ async def nuro():
         "station_count": health["total"],
         "trend": analysis["direction"],
         "fetched_at": datetime.now(timezone.utc).isoformat(),
-        # Supply intelligence
         "supply_health": health["status"],
         "supply_score": health["score"],
         "fresh_stations": health["fresh"],
         "stale_stations": health["stale"] + health["aging"],
         "closed_stations": health["closed"],
         "total_stations": health["total"],
+        "open_stations": health.get("total_open", 0),
         "price_trend": analysis["direction"],
         "avg_price_change_7d": analysis.get("change_7d", 0),
     }
