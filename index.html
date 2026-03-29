@@ -271,7 +271,7 @@ header .container {
 .stat-icon.cyan { background: var(--cyan-bg); }
 .stat-icon.purple { background: #f5f3ff; }
 [data-theme="dark"] .stat-icon.purple { background: #1e1a3a; }
-.stat-value { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; line-height: 1.1; }
+.stat-value { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; line-height: 1.2; overflow-wrap: break-word; word-break: break-word; }
 .stat-value.green { color: var(--green); }
 .stat-value.amber { color: var(--amber); }
 .stat-value.red { color: var(--red); }
@@ -643,24 +643,69 @@ footer {
   .stat-grid { grid-template-columns: repeat(3, 1fr); }
 }
 @media (max-width: 768px) {
+  /* Header — stack controls below logo */
+  header .container { flex-wrap: wrap; }
+  .header-controls { width: 100%; justify-content: space-between; gap: 6px; margin-top: 4px; }
+  .fuel-select { flex: 1; min-width: 0; font-size: 13px; }
+  .logo-text small { display: none; }
+
+  /* Hero */
+  .hero { padding: 18px 0 4px; }
   .hero h2 { font-size: 22px; }
-  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+  .hero-sub { font-size: 13px; }
+
+  /* Stats */
+  .stat-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .stat-card { padding: 14px; }
+
+  /* Supply */
+  .supply-stats { margin-left: 0; width: 100%; }
+  .supply-banner .container { flex-direction: column; align-items: flex-start; }
+
+  /* Charts + Map */
   .chart-grid { grid-template-columns: 1fr; }
   #map { height: 340px; }
-  .supply-stats { margin-left: 0; width: 100%; }
-  .logo-text small { display: none; }
-  .header-controls { gap: 6px; }
-  .fuel-select { max-width: 130px; font-size: 12px; }
+
+  /* Trend card — contain text */
+  .stat-value { word-break: break-word; font-size: 22px; }
+  .stat-detail { font-size: 12px; line-height: 1.4; }
+
+  /* Table */
+  .table-wrap { margin: 0 -14px; padding: 0 14px; }
+  .price-table th, .price-table td { padding: 10px 8px; font-size: 13px; }
+  .price-table .station-name { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* Tips */
+  .tip-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 480px) {
-  .stat-grid { grid-template-columns: 1fr 1fr; }
-  .stat-value { font-size: 20px; }
-  .tab-btn { padding: 8px 12px; font-size: 12px; }
-  .container { padding: 0 14px; }
-  .hero h2 { font-size: 20px; }
+  .container { padding: 0 12px; }
+  .hero h2 { font-size: 19px; }
+  .stat-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .stat-card { padding: 12px; }
+  .stat-value { font-size: 18px; }
+  .stat-label { font-size: 10px; }
+  .stat-sub { font-size: 11px; }
+
+  /* Tabs — scroll horizontally, bigger touch targets */
+  .tab-nav { gap: 4px; padding: 4px; }
+  .tab-btn { padding: 10px 14px; font-size: 12px; min-height: 40px; white-space: nowrap; }
+
+  /* Supply */
+  .supply-badge { flex-direction: column; align-items: flex-start; gap: 6px; padding: 10px 12px; }
+  .supply-dots { margin-top: 4px; }
+
+  /* Map */
+  #map { height: 280px; border-radius: 10px; }
+
+  /* Footer */
+  footer { padding: 16px 0; font-size: 11px; }
+  .footer-row { flex-direction: column; gap: 4px; text-align: center; }
 }
 @media (max-width: 360px) {
-  .stat-grid { grid-template-columns: 1fr; }
+  .stat-grid { grid-template-columns: 1fr; gap: 8px; }
+  .hero h2 { font-size: 17px; }
+  .tab-btn { padding: 8px 10px; font-size: 11px; }
 }
 </style>
 </head>
@@ -1335,9 +1380,13 @@ async function loadTrends() {
 
     const analysis = e10Trends.analysis || {};
     const trendEl = document.getElementById('trendValue');
-    trendEl.textContent = analysis.description || '—';
+    // Keep card text short — direction + rate only
+    const arrow = analysis.direction === 'rising' ? '↑' : analysis.direction === 'falling' ? '↓' : '→';
+    const label = (analysis.direction || 'Stable').charAt(0).toUpperCase() + (analysis.direction || 'stable').slice(1);
+    const rate = analysis.change_7d != null ? ` (${analysis.change_7d > 0 ? '+' : ''}${analysis.change_7d.toFixed(1)}p/wk)` : '';
+    trendEl.textContent = `${arrow} ${label}${rate}`;
     trendEl.className = 'stat-value' + (analysis.direction === 'rising' ? ' red' : analysis.direction === 'falling' ? ' green' : '');
-    document.getElementById('trendDetail').textContent = analysis.anomaly ? '⚠ Abnormal movement detected' : 'Based on local area averages';
+    document.getElementById('trendDetail').textContent = analysis.anomaly ? '⚠ Unusual price movement' : 'Based on local averages';
 
     document.getElementById('tipTrend').textContent = analysis.description || '—';
     document.getElementById('tipTrendDetail').textContent = `7-day change: ${(analysis.change_7d || 0) > 0 ? '+' : ''}${(analysis.change_7d || 0).toFixed(1)}p/litre`;
