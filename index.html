@@ -1,0 +1,1497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FuelPulse — Live Fuel Prices Ayr &amp; Ayrshire</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+/* ── Variables ── */
+:root {
+  --bg: #f4f6fb;
+  --bg-card: #ffffff;
+  --bg-subtle: #f8faff;
+  --text: #111827;
+  --text-muted: #6b7280;
+  --text-light: #9ca3af;
+  --border: #e5e7eb;
+  --border-light: #f3f4f6;
+  --green: #16a34a;
+  --green-bg: #f0fdf4;
+  --green-border: #bbf7d0;
+  --amber: #b45309;
+  --amber-bg: #fffbeb;
+  --amber-border: #fde68a;
+  --red: #dc2626;
+  --red-bg: #fef2f2;
+  --red-border: #fecaca;
+  --blue: #2563eb;
+  --blue-light: #3b82f6;
+  --blue-bg: #eff6ff;
+  --blue-border: #bfdbfe;
+  --cyan: #0891b2;
+  --cyan-bg: #ecfeff;
+  --purple: #7c3aed;
+  --radius: 14px;
+  --radius-sm: 8px;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.06);
+  --shadow: 0 1px 3px rgba(0,0,0,.08), 0 2px 8px rgba(0,0,0,.05);
+  --shadow-md: 0 4px 12px rgba(0,0,0,.08), 0 2px 4px rgba(0,0,0,.05);
+  --shadow-lg: 0 12px 32px rgba(0,0,0,.12), 0 4px 8px rgba(0,0,0,.06);
+  --transition: 150ms ease;
+}
+[data-theme="dark"] {
+  --bg: #0d1117;
+  --bg-card: #161b22;
+  --bg-subtle: #1a2130;
+  --text: #e6edf3;
+  --text-muted: #8b949e;
+  --text-light: #6e7681;
+  --border: #30363d;
+  --border-light: #21262d;
+  --green-bg: #0d2518;
+  --green-border: #1a4731;
+  --amber-bg: #261900;
+  --amber-border: #4a2900;
+  --red-bg: #2d0b0b;
+  --red-border: #5a1a1a;
+  --blue-bg: #0d1e3a;
+  --blue-border: #1a3a6e;
+  --cyan-bg: #001b1f;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.3);
+  --shadow: 0 1px 3px rgba(0,0,0,.4), 0 2px 8px rgba(0,0,0,.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,.4);
+  --shadow-lg: 0 12px 32px rgba(0,0,0,.5);
+}
+
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--blue); text-decoration: none; transition: opacity var(--transition); }
+a:hover { opacity: 0.8; text-decoration: underline; }
+.container { max-width: 1280px; margin: 0 auto; padding: 0 20px; }
+
+/* ── Header ── */
+header {
+  background: rgba(255,255,255,0.92);
+  border-bottom: 1px solid var(--border);
+  padding: 0;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+[data-theme="dark"] header { background: rgba(22,27,34,0.92); }
+header .container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 60px;
+  flex-wrap: wrap;
+}
+.logo { display: flex; align-items: center; gap: 10px; text-decoration: none !important; }
+.logo:hover { opacity: 1; }
+.logo-icon {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--blue) 0%, var(--cyan) 100%);
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  box-shadow: 0 2px 8px rgba(37,99,235,.3);
+  flex-shrink: 0;
+}
+.logo-text h1 {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  line-height: 1.1;
+  color: var(--text);
+}
+.logo-text h1 span { color: var(--blue); }
+.logo-text small {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-muted);
+  display: block;
+}
+.header-controls { display: flex; align-items: center; gap: 8px; }
+.fuel-select {
+  padding: 7px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color var(--transition);
+  max-width: 160px;
+}
+.fuel-select:hover, .fuel-select:focus { border-color: var(--blue); outline: none; }
+.btn-icon {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+  cursor: pointer;
+  font-size: 15px;
+  color: var(--text-muted);
+  transition: all var(--transition);
+  line-height: 1;
+}
+.btn-icon:hover { border-color: var(--blue); color: var(--blue); }
+.btn-refresh {
+  background: var(--blue);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 7px 14px;
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity var(--transition);
+  display: flex; align-items: center; gap: 5px;
+}
+.btn-refresh:hover { opacity: 0.9; }
+.btn-refresh.spinning .refresh-icon { animation: spin 0.8s linear infinite; display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Supply Banner ── */
+.supply-banner { padding: 8px 0; }
+.supply-badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  flex-wrap: wrap;
+  font-size: 13px;
+  transition: all var(--transition);
+}
+.supply-badge.normal {
+  background: var(--green-bg);
+  border: 1px solid var(--green-border);
+  color: var(--green);
+}
+.supply-badge.watch {
+  background: var(--amber-bg);
+  border: 1px solid var(--amber-border);
+  color: var(--amber);
+}
+.supply-badge.alert {
+  background: var(--red-bg);
+  border: 1px solid var(--red-border);
+  color: var(--red);
+}
+.supply-label { font-weight: 600; }
+.supply-detail { font-weight: 400; color: var(--text-muted); }
+.supply-stats { display: flex; gap: 14px; margin-left: auto; flex-wrap: wrap; }
+.supply-stat { display: flex; align-items: center; gap: 4px; font-weight: 500; }
+
+/* ── Hero ── */
+.hero { padding: 28px 0 8px; }
+.hero-inner { text-align: center; margin-bottom: 24px; }
+.hero h2 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; }
+.hero-sub {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+.live-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: livePulse 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+@keyframes livePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+/* ── Stat Cards ── */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow var(--transition), transform var(--transition);
+}
+.stat-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--blue), var(--cyan));
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+.stat-card:hover::before { opacity: 1; }
+.stat-card-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; }
+.stat-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); }
+.stat-icon {
+  width: 28px; height: 28px;
+  border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.stat-icon.green { background: var(--green-bg); }
+.stat-icon.blue { background: var(--blue-bg); }
+.stat-icon.amber { background: var(--amber-bg); }
+.stat-icon.cyan { background: var(--cyan-bg); }
+.stat-icon.purple { background: #f5f3ff; }
+[data-theme="dark"] .stat-icon.purple { background: #1e1a3a; }
+.stat-value { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; line-height: 1.1; }
+.stat-value.green { color: var(--green); }
+.stat-value.amber { color: var(--amber); }
+.stat-value.red { color: var(--red); }
+.stat-value.blue { color: var(--blue); }
+.stat-detail { font-size: 12px; color: var(--text-muted); margin-top: 3px; line-height: 1.4; }
+.trend-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+.trend-up { background: var(--red-bg); color: var(--red); }
+.trend-down { background: var(--green-bg); color: var(--green); }
+.trend-stable { background: var(--blue-bg); color: var(--blue); }
+
+/* ── Tabs ── */
+.tab-nav {
+  display: flex;
+  gap: 2px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 4px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+  box-shadow: var(--shadow-sm);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.tab-nav::-webkit-scrollbar { display: none; }
+.tab-btn {
+  padding: 9px 18px;
+  border-radius: 9px;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition);
+  display: flex; align-items: center; gap: 6px;
+}
+.tab-btn:hover { color: var(--text); background: var(--bg); }
+.tab-btn.active {
+  background: var(--blue);
+  color: white;
+  box-shadow: 0 2px 6px rgba(37,99,235,.3);
+}
+.tab-btn.active:hover { opacity: 0.95; }
+.tab-panel { display: none; animation: fadeIn 0.2s ease; }
+.tab-panel.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ── Map ── */
+.map-wrap { position: relative; }
+#map {
+  width: 100%;
+  height: 480px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  background: var(--bg-subtle);
+}
+.map-legend {
+  display: flex;
+  gap: 16px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+  align-items: center;
+}
+.legend-item { display: flex; align-items: center; gap: 5px; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+/* ── Table ── */
+.table-wrap {
+  overflow-x: auto;
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  -webkit-overflow-scrolling: touch;
+}
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead { position: sticky; top: 60px; z-index: 10; }
+th {
+  background: var(--bg-subtle);
+  text-align: left;
+  padding: 11px 14px;
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  transition: color var(--transition);
+}
+th:hover { color: var(--blue); }
+td {
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border-light);
+  vertical-align: middle;
+}
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:nth-child(even) { background: var(--bg-subtle); }
+tbody tr:hover { background: var(--blue-bg); }
+tbody tr.cheapest td { background: var(--green-bg); }
+tbody tr.cheapest:hover td { background: #dcfce7; }
+[data-theme="dark"] tbody tr.cheapest:hover td { background: #0a2e1a; }
+tbody tr.stale-row td { opacity: 0.55; }
+tbody tr.closed-row td { opacity: 0.35; text-decoration: line-through; }
+.price-cell { font-weight: 700; font-variant-numeric: tabular-nums; }
+.price-cheap { color: var(--green); }
+.price-mid { color: var(--amber); }
+.price-high { color: var(--red); }
+.freshness-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 20px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.freshness-fresh { background: var(--green-bg); color: var(--green); }
+.freshness-aging { background: var(--amber-bg); color: var(--amber); }
+.freshness-stale { background: var(--red-bg); color: var(--red); }
+.freshness-closed { background: #f3f4f6; color: #6b7280; }
+[data-theme="dark"] .freshness-closed { background: #21262d; color: #6e7681; }
+.brand-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px; height: 22px;
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 800;
+  color: white;
+  margin-right: 5px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+.btn-sm {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 9px;
+  font-size: 11px;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-family: inherit;
+  transition: all var(--transition);
+  margin-left: 2px;
+}
+.btn-sm:hover { border-color: var(--blue); color: var(--blue); }
+.cheapest-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--green);
+  background: var(--green-bg);
+  padding: 1px 6px;
+  border-radius: 10px;
+  margin-left: 4px;
+}
+
+/* ── Charts ── */
+.chart-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  box-shadow: var(--shadow);
+}
+.chart-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+.chart-card .chart-subtitle { font-size: 12px; color: var(--text-muted); margin-bottom: 16px; }
+.chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+.chart-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  box-shadow: var(--shadow);
+}
+.chart-box h4 { font-size: 14px; font-weight: 600; color: var(--text-muted); margin-bottom: 12px; }
+.crude-bar {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 16px;
+  box-shadow: var(--shadow);
+  flex-wrap: wrap;
+}
+.crude-bar .crude-icon { font-size: 22px; flex-shrink: 0; }
+.crude-bar h4 { font-size: 13px; font-weight: 600; margin-bottom: 1px; }
+.crude-bar p { font-size: 12px; color: var(--text-muted); }
+
+/* ── Tips ── */
+.tips-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.tip-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  box-shadow: var(--shadow);
+  transition: box-shadow var(--transition), transform var(--transition);
+}
+.tip-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+.tip-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.tip-icon-wrap {
+  width: 36px; height: 36px;
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.tip-icon-wrap.green { background: var(--green-bg); }
+.tip-icon-wrap.blue { background: var(--blue-bg); }
+.tip-icon-wrap.amber { background: var(--amber-bg); }
+.tip-icon-wrap.purple { background: #f5f3ff; }
+[data-theme="dark"] .tip-icon-wrap.purple { background: #1e1a3a; }
+.tip-card h4 { font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 0; }
+.tip-value { font-size: 26px; font-weight: 800; color: var(--green); margin-bottom: 4px; }
+.tip-value.blue { color: var(--blue); }
+.tip-value.amber { color: var(--amber); }
+.tip-card p { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+
+/* ── Data Sources (accordion) ── */
+.accordion {
+  margin-top: 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.accordion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+  user-select: none;
+  transition: color var(--transition), background var(--transition);
+  gap: 8px;
+}
+.accordion-header:hover { color: var(--text); background: var(--bg-subtle); }
+.accordion-icon {
+  font-size: 12px;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+  color: var(--text-light);
+}
+.accordion.open .accordion-icon { transform: rotate(180deg); }
+.accordion-body { display: none; padding: 0 20px 16px; border-top: 1px solid var(--border-light); }
+.accordion.open .accordion-body { display: block; animation: fadeIn 0.15s ease; }
+.accordion-body p { font-size: 13px; color: var(--text-muted); margin-top: 14px; margin-bottom: 6px; line-height: 1.6; }
+.source-links { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.source-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  transition: all var(--transition);
+}
+.source-link:hover {
+  border-color: var(--blue);
+  color: var(--blue);
+  text-decoration: none;
+  background: var(--blue-bg);
+}
+
+/* ── Modal ── */
+.modal-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 2000;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  backdrop-filter: blur(3px);
+}
+.modal-overlay.active { display: flex; }
+.modal {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 24px;
+  max-width: 580px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border);
+  animation: modalIn 0.2s ease;
+}
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.97) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.modal h3 { font-size: 16px; font-weight: 700; }
+.modal-close {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 9px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1;
+  transition: all var(--transition);
+}
+.modal-close:hover { color: var(--text); border-color: var(--text-muted); }
+
+/* ── Footer ── */
+footer {
+  margin-top: 48px;
+  border-top: 1px solid var(--border);
+  padding: 24px 0;
+  text-align: center;
+}
+.footer-inner { color: var(--text-muted); font-size: 13px; line-height: 2; }
+.footer-brand { font-weight: 700; color: var(--blue); }
+.footer-links { display: flex; justify-content: center; align-items: center; gap: 20px; flex-wrap: wrap; margin-top: 6px; }
+.footer-links a { color: var(--text-muted); font-size: 12px; transition: color var(--transition); }
+.footer-links a:hover { color: var(--blue); text-decoration: none; }
+.footer-divider { color: var(--border); }
+
+/* ── Loading ── */
+.loading-state { text-align: center; padding: 48px 20px; color: var(--text-muted); }
+.spinner {
+  display: inline-block;
+  width: 28px; height: 28px;
+  border: 2.5px solid var(--border);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 10px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 1024px) {
+  .stat-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 768px) {
+  .hero h2 { font-size: 22px; }
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+  .chart-grid { grid-template-columns: 1fr; }
+  #map { height: 340px; }
+  .supply-stats { margin-left: 0; width: 100%; }
+  .logo-text small { display: none; }
+  .header-controls { gap: 6px; }
+  .fuel-select { max-width: 130px; font-size: 12px; }
+}
+@media (max-width: 480px) {
+  .stat-grid { grid-template-columns: 1fr 1fr; }
+  .stat-value { font-size: 20px; }
+  .tab-btn { padding: 8px 12px; font-size: 12px; }
+  .container { padding: 0 14px; }
+  .hero h2 { font-size: 20px; }
+}
+@media (max-width: 360px) {
+  .stat-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div class="container">
+    <a class="logo" href="/">
+      <div class="logo-icon">⛽</div>
+      <div class="logo-text">
+        <h1>Fuel<span>Pulse</span></h1>
+        <small>by WispAyr</small>
+      </div>
+    </a>
+    <div class="header-controls">
+      <select class="fuel-select" id="fuelSelect" onchange="changeFuel()">
+        <option value="E10">Unleaded (E10)</option>
+        <option value="B7_STANDARD">Diesel</option>
+        <option value="E5">Super Unleaded (E5)</option>
+      </select>
+      <button class="btn-refresh" onclick="refreshAll(this)" id="refreshBtn">
+        <span class="refresh-icon">↻</span> Refresh
+      </button>
+      <button class="btn-icon" onclick="toggleTheme()" id="themeBtn" title="Toggle theme">🌙</button>
+    </div>
+  </div>
+</header>
+
+<!-- Supply Banner -->
+<div class="supply-banner">
+  <div class="container">
+    <div class="supply-badge normal" id="supplyBanner">
+      <span class="supply-label" id="supplyLabel">Checking supply…</span>
+      <span class="supply-detail" id="supplyDetail"></span>
+      <div class="supply-stats" id="supplyStats"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="container">
+    <div class="hero-inner">
+      <h2>Live Fuel Prices — Ayr &amp; Ayrshire</h2>
+      <p class="hero-sub">
+        <span class="live-dot"></span>
+        Live prices from <strong id="stationCount">–</strong>&nbsp;local stations
+      </p>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-card-header">
+          <span class="stat-label">Cheapest Unleaded</span>
+          <span class="stat-icon green">🥇</span>
+        </div>
+        <div class="stat-value green" id="cheapE10">—</div>
+        <div class="stat-detail" id="cheapE10Station">Loading…</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-header">
+          <span class="stat-label">Cheapest Diesel</span>
+          <span class="stat-icon blue">🥇</span>
+        </div>
+        <div class="stat-value blue" id="cheapDiesel">—</div>
+        <div class="stat-detail" id="cheapDieselStation">Loading…</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-header">
+          <span class="stat-label">Area Average (E10)</span>
+          <span class="stat-icon cyan">📊</span>
+        </div>
+        <div class="stat-value" id="avgE10">—</div>
+        <div class="stat-detail" id="avgE10Detail">Loading…</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-header">
+          <span class="stat-label">Best Day to Fill Up</span>
+          <span class="stat-icon amber">📅</span>
+        </div>
+        <div class="stat-value" id="bestDay">—</div>
+        <div class="stat-detail" id="bestDayDetail">Loading…</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-header">
+          <span class="stat-label">7-Day Trend</span>
+          <span class="stat-icon purple">📈</span>
+        </div>
+        <div class="stat-value" id="trendValue">—</div>
+        <div class="stat-detail" id="trendDetail">Loading…</div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tab-nav" id="tabNav">
+      <button class="tab-btn active" data-tab="map" onclick="showTab('map', this)">🗺️ Map</button>
+      <button class="tab-btn" data-tab="table" onclick="showTab('table', this)">📊 Table</button>
+      <button class="tab-btn" data-tab="trends" onclick="showTab('trends', this)">📈 Trends</button>
+      <button class="tab-btn" data-tab="tips" onclick="showTab('tips', this)">💡 Tips &amp; Savings</button>
+    </div>
+
+    <!-- Map Tab -->
+    <div class="tab-panel active" id="panel-map">
+      <div class="map-wrap">
+        <div id="map"></div>
+      </div>
+      <div class="map-legend">
+        <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text-light)">Price:</span>
+        <div class="legend-item"><div class="legend-dot" style="background:#16a34a"></div> Cheapest</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div> Mid-range</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#dc2626"></div> Expensive</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#9ca3af"></div> Stale / Closed</div>
+      </div>
+    </div>
+
+    <!-- Table Tab -->
+    <div class="tab-panel" id="panel-table">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th onclick="sortTable('status')">Status</th>
+              <th onclick="sortTable('name')">Station ↕</th>
+              <th onclick="sortTable('brand')">Brand</th>
+              <th onclick="sortTable('distance')">Dist ↕</th>
+              <th onclick="sortTable('e10')">E10 ↕</th>
+              <th onclick="sortTable('diesel')">Diesel ↕</th>
+              <th onclick="sortTable('e5')">E5 ↕</th>
+              <th onclick="sortTable('updated')">Updated ↕</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="stationTableBody">
+            <tr><td colspan="9" class="loading-state"><div class="spinner"></div><br>Loading stations…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Trends Tab -->
+    <div class="tab-panel" id="panel-trends">
+      <div class="chart-card">
+        <h3>Price Trends — Ayr &amp; Ayrshire</h3>
+        <div class="chart-subtitle">90-day rolling average from local stations</div>
+        <div style="position:relative;height:240px">
+          <canvas id="trendChart"></canvas>
+        </div>
+      </div>
+      <div class="chart-grid">
+        <div class="chart-box">
+          <h4>Brand Averages (National)</h4>
+          <div style="position:relative;height:220px">
+            <canvas id="brandChart"></canvas>
+          </div>
+        </div>
+        <div class="chart-box">
+          <h4>Best Day to Fill Up</h4>
+          <div style="position:relative;height:220px">
+            <canvas id="dayChart"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="crude-bar" id="crudeWidget">
+        <span class="crude-icon">🛢️</span>
+        <div>
+          <h4>Brent Crude Oil</h4>
+          <p id="crudeInfo">Loading…</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tips Tab -->
+    <div class="tab-panel" id="panel-tips">
+      <div class="tips-grid" id="tipsGrid">
+        <div class="tip-card">
+          <div class="tip-header">
+            <div class="tip-icon-wrap green">💰</div>
+            <h4>Full Tank Savings</h4>
+          </div>
+          <div class="tip-value" id="tipSavings">—</div>
+          <p id="tipSavingsDetail">Comparing cheapest vs most expensive local station</p>
+        </div>
+        <div class="tip-card">
+          <div class="tip-header">
+            <div class="tip-icon-wrap blue">📅</div>
+            <h4>Best Day to Fill Up</h4>
+          </div>
+          <div class="tip-value blue" id="tipBestDay">—</div>
+          <p id="tipBestDayDetail">Based on national price data analysis</p>
+        </div>
+        <div class="tip-card">
+          <div class="tip-header">
+            <div class="tip-icon-wrap amber">🏪</div>
+            <h4>Cheapest Brand Nationally</h4>
+          </div>
+          <div class="tip-value amber" id="tipBrand">—</div>
+          <p id="tipBrandDetail">National average across all stations</p>
+        </div>
+        <div class="tip-card">
+          <div class="tip-header">
+            <div class="tip-icon-wrap blue">📊</div>
+            <h4>Weekly Price Movement</h4>
+          </div>
+          <div class="tip-value blue" id="tipTrend">—</div>
+          <p id="tipTrendDetail">Based on Ayr area prices over 7 days</p>
+        </div>
+        <div class="tip-card">
+          <div class="tip-header">
+            <div class="tip-icon-wrap green">🚗</div>
+            <h4>Annual Savings Potential</h4>
+          </div>
+          <div class="tip-value" id="tipAnnual">—</div>
+          <p>Always fill at cheapest vs most expensive (weekly fill-up, 55L tank)</p>
+        </div>
+        <div class="tip-card">
+          <div class="tip-header">
+            <div class="tip-icon-wrap amber">⏰</div>
+            <h4>Worst Day to Fill Up</h4>
+          </div>
+          <div class="tip-value amber" id="tipWorstDay">—</div>
+          <p id="tipWorstDayDetail">You'll pay the most on average on this day</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Data Sources (accordion) -->
+    <div class="accordion" id="dataAccordion">
+      <div class="accordion-header" onclick="toggleAccordion()">
+        <span>📋 Data Sources &amp; Methodology</span>
+        <span class="accordion-icon">▼</span>
+      </div>
+      <div class="accordion-body">
+        <p>Prices sourced from the <strong>UK Government Fuel Finder scheme</strong> (launched February 2026). All UK fuel stations must update prices within <strong>30 minutes</strong> of any change — making this the most accurate real-time fuel data available.</p>
+        <p>Data aggregated via <a href="https://fuelcosts.co.uk" target="_blank">fuelcosts.co.uk</a>. Coverage: 20-mile radius from Ayr town centre, spanning KA1–KA3 (Kilmarnock), KA6–KA8 (Ayr), KA9–KA11 (Irvine &amp; Saltcoats), KA20–KA22 (Troon), and KA30 (Largs).</p>
+        <p><strong>Freshness:</strong> 🟢 &lt;24h (confirmed active) · 🟡 24–48h · 🔴 48h+ (possibly closed/out of stock) · ⚫ Confirmed closed</p>
+        <div class="source-links">
+          <a class="source-link" href="https://www.gov.uk/guidance/fuel-finder" target="_blank">🏛️ Gov Fuel Finder</a>
+          <a class="source-link" href="https://www.petrolprices.co.uk/locations/ayr" target="_blank">🔍 PetrolPrices (Ayr)</a>
+          <a class="source-link" href="https://www.google.com/maps/search/petrol+station+near+ayr" target="_blank">📍 Google Maps</a>
+          <a class="source-link" href="https://fuelcosts.co.uk" target="_blank">📊 FuelCosts.co.uk</a>
+          <a class="source-link" href="https://oilprice.com/oil-price-charts/" target="_blank">🛢️ Crude Oil</a>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /container -->
+</div><!-- /hero -->
+
+<!-- History Modal -->
+<div class="modal-overlay" id="historyModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="historyTitle">Price History</h3>
+      <button class="modal-close" onclick="closeHistoryModal()">✕</button>
+    </div>
+    <canvas id="historyChart" height="220"></canvas>
+  </div>
+</div>
+
+<footer>
+  <div class="container">
+    <div class="footer-inner">
+      <div>
+        <span class="footer-brand">FuelPulse</span> — Live fuel prices for Ayr &amp; Ayrshire
+      </div>
+      <div class="footer-links">
+        <a href="https://wispayr.online" target="_blank">Built by WispAyr ↗</a>
+        <span class="footer-divider">·</span>
+        <span>Data refreshes every 5 minutes</span>
+        <span class="footer-divider">·</span>
+        <span>Prices in pence per litre</span>
+        <span class="footer-divider">·</span>
+        <a href="https://github.com/WispAyr/fuel-tracker" target="_blank">GitHub ↗</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+// ── State ──
+let stations = [];
+let supplyHealth = {};
+let sortField = 'e10';
+let sortAsc = true;
+let currentFuel = 'E10';
+let map, markersLayer;
+let mapInitialised = false;
+let trendChart, brandChart, dayChart, historyChartInstance;
+
+// ── Theme ──
+function applyTheme(dark) {
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : '');
+  document.getElementById('themeBtn').textContent = dark ? '☀️' : '🌙';
+}
+function toggleTheme() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  applyTheme(!isDark);
+  localStorage.setItem('theme', !isDark ? 'dark' : 'light');
+  if (map) setTimeout(() => map.invalidateSize(), 150);
+}
+// Default: light mode
+const savedTheme = localStorage.getItem('theme');
+if (savedTheme === 'dark') applyTheme(true);
+
+// ── Accordion ──
+function toggleAccordion() {
+  document.getElementById('dataAccordion').classList.toggle('open');
+}
+
+// ── Tabs ──
+function showTab(name, btn) {
+  document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  (btn || document.querySelector(`[data-tab="${name}"]`)).classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+  if (name === 'map') {
+    setTimeout(() => { if (map) map.invalidateSize(); }, 120);
+  }
+}
+
+// ── Fuel type ──
+function changeFuel() {
+  currentFuel = document.getElementById('fuelSelect').value;
+  loadStations();
+}
+
+// ── Helpers ──
+function fuelPrice(station, type) {
+  const p = (station.prices || []).find(x => x.fuel_type === type);
+  return p ? p.price : null;
+}
+function fuelUpdated(station, type) {
+  const p = (station.prices || []).find(x => x.fuel_type === type);
+  return p ? p.price_last_updated : null;
+}
+function formatPrice(p) { return p != null ? p.toFixed(1) + 'p' : '—'; }
+function priceClass(price, prices) {
+  if (price == null || !prices.length) return '';
+  const sorted = prices.filter(Boolean).sort((a, b) => a - b);
+  const q1 = sorted[Math.floor(sorted.length * 0.33)];
+  const q2 = sorted[Math.floor(sorted.length * 0.66)];
+  if (price <= q1) return 'price-cheap';
+  if (price <= q2) return 'price-mid';
+  return 'price-high';
+}
+function stationName(s) {
+  const name = s.trading_name || s.name || 'Unknown';
+  return name.split(' - ')[0].replace(/PETROL FILLING STATION/i, '').trim() || name;
+}
+function stationCity(s) {
+  return (s.location || s.address || {}).city || (s.address || {}).town || '';
+}
+function markerColor(price, allPrices, freshness) {
+  if (freshness && (freshness.status === 'stale' || freshness.status === 'closed')) return '#9ca3af';
+  if (price == null || !allPrices.length) return '#9ca3af';
+  const sorted = allPrices.filter(Boolean).sort((a, b) => a - b);
+  const q1 = sorted[Math.floor(sorted.length * 0.33)];
+  const q2 = sorted[Math.floor(sorted.length * 0.66)];
+  if (price <= q1) return '#16a34a';
+  if (price <= q2) return '#f59e0b';
+  return '#dc2626';
+}
+
+const BRAND_COLORS = {
+  TESCO:'#00539F', ASDA:'#78BE20', BP:'#009543', SHELL:'#FBCE07',
+  ESSO:'#1A3668', TEXACO:'#E1261C', MORRISONS:'#007A33', SAINSBURYS:'#F06C00',
+  JET:'#E30613', MURCO:'#003DA5', GULF:'#FF6600', MAXOL:'#004B87'
+};
+function brandBadge(brand) {
+  const b = (brand || '').toUpperCase();
+  const color = BRAND_COLORS[b] || '#6b7280';
+  const letter = b.charAt(0) || '?';
+  return `<span class="brand-badge" style="background:${color}">${letter}</span>`;
+}
+
+// ── Supply Banner ──
+function updateSupplyBanner(health) {
+  const banner = document.getElementById('supplyBanner');
+  const label = document.getElementById('supplyLabel');
+  const detail = document.getElementById('supplyDetail');
+  const stats = document.getElementById('supplyStats');
+  const freshPct = health.fresh_pct || 0;
+
+  // More nuanced status — only go alert if really bad
+  let status = health.status || 'normal';
+  if (status === 'alert' && freshPct > 50) status = 'watch';
+
+  banner.className = 'supply-badge ' + status;
+  const statusLabel = { normal: 'Supply Normal', watch: 'Supply Watch', alert: 'Supply Alert' }[status] || 'Supply Normal';
+  const emoji = { normal: '✓', watch: '⚠', alert: '!' }[status] || '✓';
+  label.textContent = `${emoji} ${statusLabel}`;
+  detail.textContent = `${freshPct}% of stations with fresh prices`;
+  stats.innerHTML = `
+    <span class="supply-stat">🟢 ${health.fresh || 0}</span>
+    <span class="supply-stat">🟡 ${health.aging || 0}</span>
+    <span class="supply-stat">🔴 ${health.stale || 0}</span>
+    <span class="supply-stat">⚫ ${health.closed || 0}</span>
+  `;
+}
+
+// ── Map ──
+function initMap() {
+  if (mapInitialised) return;
+  mapInitialised = true;
+  try {
+    map = L.map('map', { zoomControl: true }).setView([55.46, -4.63], 11);
+    // CartoDB Positron — clean light tiles
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: 'abcd',
+      maxZoom: 19
+    }).addTo(map);
+    markersLayer = L.layerGroup().addTo(map);
+  } catch (err) {
+    console.error('Map init failed:', err);
+    mapInitialised = false;
+  }
+}
+
+function updateMap() {
+  if (!map) return;
+  markersLayer.clearLayers();
+  const allPrices = stations.map(s => fuelPrice(s, currentFuel)).filter(p => p != null);
+
+  stations.forEach(s => {
+    const lat = s.lat || (s.location || {}).latitude;
+    const lon = s.lon || (s.location || {}).longitude;
+    if (!lat || !lon) return;
+
+    const price = fuelPrice(s, currentFuel);
+    const freshness = s.freshness || {};
+    const color = markerColor(price, allPrices, freshness);
+    const name = stationName(s);
+    const brand = s.brand_name || s.brand || '';
+    const city = stationCity(s);
+    const dist = s.distance != null ? s.distance.toFixed(1) + ' mi' : '';
+
+    let pricesHtml = '';
+    (s.prices || []).forEach(p => {
+      const fuelLabels = { E10: 'Unleaded (E10)', B7_STANDARD: 'Diesel', E5: 'Super (E5)' };
+      const label = fuelLabels[p.fuel_type] || p.fuel_type;
+      pricesHtml += `<tr><td style="padding:3px 10px 3px 0;color:#6b7280;font-size:12px">${label}</td><td style="font-weight:700;font-size:13px">${p.price ? p.price.toFixed(1) + 'p' : '—'}</td></tr>`;
+    });
+
+    const popup = `
+      <div style="min-width:190px;font-family:Inter,sans-serif">
+        <div style="font-weight:700;font-size:14px;margin-bottom:2px">${name}</div>
+        <div style="font-size:12px;color:#6b7280;margin-bottom:8px">${[brand, city, dist].filter(Boolean).join(' · ')}</div>
+        <table style="width:100%;border-collapse:collapse">${pricesHtml}</table>
+        <div style="font-size:11px;color:#9ca3af;margin-top:6px;padding-top:6px;border-top:1px solid #f3f4f6">${freshness.icon || ''} ${freshness.label || ''} ${freshness.detail ? '— ' + freshness.detail : ''}</div>
+      </div>`;
+
+    const isSelected = price != null && price === Math.min(...allPrices);
+    const marker = L.circleMarker([lat, lon], {
+      radius: isSelected ? 12 : 9,
+      fillColor: color,
+      color: isSelected ? '#1a1a2e' : 'rgba(255,255,255,0.8)',
+      weight: isSelected ? 2.5 : 1.5,
+      fillOpacity: 0.88
+    }).bindPopup(popup, { maxWidth: 240 });
+    markersLayer.addLayer(marker);
+  });
+
+  const validCoords = stations
+    .filter(s => (s.lat || (s.location || {}).latitude) && (s.lon || (s.location || {}).longitude))
+    .map(s => [s.lat || s.location.latitude, s.lon || s.location.longitude]);
+  if (validCoords.length > 0) {
+    try { map.fitBounds(validCoords, { padding: [32, 32], maxZoom: 13 }); } catch(e) {}
+  }
+}
+
+function flyToStation(lat, lon) {
+  showTab('map', document.querySelector('[data-tab="map"]'));
+  setTimeout(() => {
+    if (!map) return;
+    map.invalidateSize();
+    map.flyTo([lat, lon], 15, { duration: 0.8 });
+    markersLayer.eachLayer(layer => {
+      try {
+        const ll = layer.getLatLng();
+        if (Math.abs(ll.lat - lat) < 0.001 && Math.abs(ll.lng - lon) < 0.001) {
+          layer.openPopup();
+        }
+      } catch(e) {}
+    });
+  }, 200);
+}
+
+// ── Table ──
+function renderTable() {
+  const tbody = document.getElementById('stationTableBody');
+  const allE10 = stations.map(s => fuelPrice(s, 'E10')).filter(p => p != null);
+  const allDiesel = stations.map(s => fuelPrice(s, 'B7_STANDARD')).filter(p => p != null);
+  const allE5 = stations.map(s => fuelPrice(s, 'E5')).filter(p => p != null);
+  const cheapE10 = allE10.length ? Math.min(...allE10) : null;
+  const cheapDiesel = allDiesel.length ? Math.min(...allDiesel) : null;
+
+  const statusOrder = { fresh: 0, aging: 1, stale: 2, closed: 3 };
+  const sorted = [...stations].sort((a, b) => {
+    const fa = a.freshness || {}, fb = b.freshness || {};
+    const sa = statusOrder[fa.status] ?? 2, sb = statusOrder[fb.status] ?? 2;
+    if (sa !== sb) return sa - sb;
+    let va, vb;
+    switch (sortField) {
+      case 'name': return sortAsc ? stationName(a).localeCompare(stationName(b)) : stationName(b).localeCompare(stationName(a));
+      case 'brand': return sortAsc ? (a.brand||'').localeCompare(b.brand||'') : (b.brand||'').localeCompare(a.brand||'');
+      case 'distance': va = a.distance || 99; vb = b.distance || 99; break;
+      case 'e10': va = fuelPrice(a, 'E10') || 999; vb = fuelPrice(b, 'E10') || 999; break;
+      case 'diesel': va = fuelPrice(a, 'B7_STANDARD') || 999; vb = fuelPrice(b, 'B7_STANDARD') || 999; break;
+      case 'e5': va = fuelPrice(a, 'E5') || 999; vb = fuelPrice(b, 'E5') || 999; break;
+      case 'updated':
+        va = fuelUpdated(a, currentFuel) || '';
+        vb = fuelUpdated(b, currentFuel) || '';
+        return sortAsc ? vb.localeCompare(va) : va.localeCompare(vb);
+      case 'status': va = sa; vb = sb; break;
+      default: va = fuelPrice(a, currentFuel) || 999; vb = fuelPrice(b, currentFuel) || 999;
+    }
+    return sortAsc ? va - vb : vb - va;
+  });
+
+  tbody.innerHTML = sorted.map(s => {
+    const e10 = fuelPrice(s, 'E10');
+    const diesel = fuelPrice(s, 'B7_STANDARD');
+    const e5 = fuelPrice(s, 'E5');
+    const f = s.freshness || {};
+    const brand = s.brand_name || s.brand || '';
+    const lat = s.lat || (s.location || {}).latitude;
+    const lon = s.lon || (s.location || {}).longitude;
+    const dist = s.distance != null ? s.distance.toFixed(1) + ' mi' : '—';
+    const name = stationName(s);
+    const city = stationCity(s);
+    const isCheapest = (e10 != null && e10 === cheapE10) || (diesel != null && diesel === cheapDiesel);
+
+    let rowClass = '';
+    if (f.status === 'closed') rowClass = 'closed-row';
+    else if (f.status === 'stale') rowClass = 'stale-row';
+    else if (isCheapest) rowClass = 'cheapest';
+    const freshnessClass = { fresh:'freshness-fresh', aging:'freshness-aging', stale:'freshness-stale', closed:'freshness-closed' }[f.status] || '';
+    const cheapestBadge = isCheapest ? '<span class="cheapest-badge">★ CHEAPEST</span>' : '';
+
+    return `<tr class="${rowClass}">
+      <td><span class="freshness-badge ${freshnessClass}">${f.icon || ''} ${f.label || ''}</span></td>
+      <td>
+        <strong>${name}</strong>${cheapestBadge}
+        ${city ? `<br><span style="font-size:11px;color:var(--text-muted)">${city}</span>` : ''}
+      </td>
+      <td>${brandBadge(brand)}<span style="font-size:13px">${brand}</span></td>
+      <td style="color:var(--text-muted);font-size:13px">${dist}</td>
+      <td class="price-cell ${priceClass(e10, allE10)}">${formatPrice(e10)}</td>
+      <td class="price-cell ${priceClass(diesel, allDiesel)}">${formatPrice(diesel)}</td>
+      <td class="price-cell ${priceClass(e5, allE5)}">${formatPrice(e5)}</td>
+      <td style="font-size:12px;color:var(--text-muted)">${f.hours_since_update != null ? (f.hours_since_update < 1 ? '<1h' : Math.round(f.hours_since_update) + 'h') + ' ago' : '—'}</td>
+      <td>
+        ${lat ? `<button class="btn-sm" onclick="flyToStation(${lat},${lon})" title="Show on map">📍</button>` : ''}
+        <button class="btn-sm" onclick="showHistory('${s.node_id}','${name.replace(/'/g,"\\'")}')">📈</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function sortTable(field) {
+  if (sortField === field) sortAsc = !sortAsc;
+  else { sortField = field; sortAsc = true; }
+  renderTable();
+}
+
+// ── History Modal ──
+async function showHistory(nodeId, name) {
+  document.getElementById('historyModal').classList.add('active');
+  document.getElementById('historyTitle').textContent = `Price History — ${name}`;
+
+  try {
+    const [e10Data, dieselData] = await Promise.all([
+      fetch(`/api/history/${nodeId}?fuel=E10&days=90`).then(r => r.json()),
+      fetch(`/api/history/${nodeId}?fuel=B7_STANDARD&days=90`).then(r => r.json())
+    ]);
+
+    const e10History = (e10Data.history || []).map(h => ({ x: h.timestamp, y: h.pricePence }));
+    const dieselHistory = (dieselData.history || []).map(h => ({ x: h.timestamp, y: h.pricePence }));
+
+    const ctx = document.getElementById('historyChart').getContext('2d');
+    if (historyChartInstance) historyChartInstance.destroy();
+    historyChartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        datasets: [
+          { label: 'E10 (Unleaded)', data: e10History, borderColor: '#16a34a', backgroundColor: 'rgba(22,163,74,.08)', fill: true, tension: 0.4, pointRadius: 3, borderWidth: 2 },
+          { label: 'Diesel', data: dieselHistory, borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,.08)', fill: true, tension: 0.4, pointRadius: 3, borderWidth: 2 }
+        ]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          x: { type: 'time', time: { unit: 'week' }, grid: { display: false } },
+          y: { title: { display: true, text: 'p/litre' }, grid: { color: 'rgba(0,0,0,.05)' } }
+        },
+        plugins: { legend: { position: 'top' } }
+      }
+    });
+  } catch (e) {
+    console.error('History load failed:', e);
+  }
+}
+
+function closeHistoryModal() {
+  document.getElementById('historyModal').classList.remove('active');
+}
+
+// ── Data Loading ──
+async function loadStations() {
+  try {
+    const data = await fetch(`/api/stations?fuel=${currentFuel}&radius=20`).then(r => r.json());
+    stations = data.stations || [];
+    supplyHealth = data.supply_health || {};
+
+    updateSupplyBanner(supplyHealth);
+    document.getElementById('stationCount').textContent = stations.length;
+
+    let cheapE10 = { price: 9999, name: '' }, cheapDiesel = { price: 9999, name: '' };
+    let e10Prices = [], dieselPrices = [];
+
+    stations.forEach(s => {
+      const name = stationName(s);
+      const brand = s.brand_name || s.brand || '';
+      (s.prices || []).forEach(p => {
+        if (p.fuel_type === 'E10' && p.price != null) {
+          e10Prices.push(p.price);
+          if (p.price < cheapE10.price) cheapE10 = { price: p.price, name: `${brand} ${stationCity(s)}`.trim() || name };
+        }
+        if (p.fuel_type === 'B7_STANDARD' && p.price != null) {
+          dieselPrices.push(p.price);
+          if (p.price < cheapDiesel.price) cheapDiesel = { price: p.price, name: `${brand} ${stationCity(s)}`.trim() || name };
+        }
+      });
+    });
+
+    document.getElementById('cheapE10').textContent = cheapE10.price < 9999 ? cheapE10.price.toFixed(1) + 'p' : '—';
+    document.getElementById('cheapE10Station').textContent = cheapE10.name || '—';
+    document.getElementById('cheapDiesel').textContent = cheapDiesel.price < 9999 ? cheapDiesel.price.toFixed(1) + 'p' : '—';
+    document.getElementById('cheapDieselStation').textContent = cheapDiesel.name || '—';
+
+    const avgE10 = e10Prices.length ? (e10Prices.reduce((a, b) => a + b, 0) / e10Prices.length) : null;
+    document.getElementById('avgE10').textContent = avgE10 != null ? avgE10.toFixed(1) + 'p' : '—';
+
+    if (e10Prices.length >= 2) {
+      const maxE10 = Math.max(...e10Prices);
+      const minE10 = Math.min(...e10Prices);
+      const diff = maxE10 - minE10;
+      const tankSaving = (diff / 100 * 55).toFixed(2);
+      const annualSaving = (tankSaving * 52).toFixed(0);
+      document.getElementById('avgE10Detail').textContent = `Range: ${minE10.toFixed(1)}p – ${maxE10.toFixed(1)}p (${diff.toFixed(1)}p spread)`;
+      document.getElementById('tipSavings').textContent = `£${tankSaving}`;
+      document.getElementById('tipSavingsDetail').textContent = `Save £${tankSaving} per 55L tank — that's ${diff.toFixed(1)}p/L between cheapest and priciest`;
+      document.getElementById('tipAnnual').textContent = `£${annualSaving}/yr`;
+    }
+
+    updateMap();
+    renderTable();
+  } catch (e) {
+    console.error('Station load failed:', e);
+  }
+}
+
+async function loadTrends() {
+  try {
+    const [e10Trends, dieselTrends] = await Promise.all([
+      fetch('/api/trends?fuel=E10&days=90').then(r => r.json()),
+      fetch('/api/trends?fuel=B7_STANDARD&days=90').then(r => r.json())
+    ]);
+
+    const analysis = e10Trends.analysis || {};
+    const trendEl = document.getElementById('trendValue');
+    trendEl.textContent = analysis.description || '—';
+    trendEl.className = 'stat-value' + (analysis.direction === 'rising' ? ' red' : analysis.direction === 'falling' ? ' green' : '');
+    document.getElementById('trendDetail').textContent = analysis.anomaly ? '⚠ Abnormal movement detected' : 'Based on local area averages';
+
+    document.getElementById('tipTrend').textContent = analysis.description || '—';
+    document.getElementById('tipTrendDetail').textContent = `7-day change: ${(analysis.change_7d || 0) > 0 ? '+' : ''}${(analysis.change_7d || 0).toFixed(1)}p/litre`;
+
+    const e10Points = (e10Trends.trends || []).map(t => ({ x: t.date, y: t.avgPricePence }));
+    const dieselPoints = (dieselTrends.trends || []).map(t => ({ x: t.date, y: t.avgPricePence }));
+
+    const ctx = document.getElementById('trendChart').getContext('2d');
+    if (trendChart) trendChart.destroy();
+    trendChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        datasets: [
+          { label: 'E10', data: e10Points, borderColor: '#16a34a', backgroundColor: 'rgba(22,163,74,.07)', fill: true, tension: 0.4, borderWidth: 2.5, pointRadius: 2, pointHoverRadius: 5 },
+          { label: 'Diesel', data: dieselPoints, borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,.07)', fill: true, tension: 0.4, borderWidth: 2.5, pointRadius: 2, pointHoverRadius: 5 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: {
+          x: { type: 'time', time: { unit: 'week' }, grid: { display: false }, ticks: { color: '#9ca3af' } },
+          y: { title: { display: true, text: 'p/litre', color: '#9ca3af' }, grid: { color: 'rgba(0,0,0,.04)' }, ticks: { color: '#9ca3af' } }
+        },
+        plugins: {
+          legend: { position: 'top', labels: { usePointStyle: true, pointStyle: 'circle', padding: 16 } },
+          tooltip: { mode: 'index', intersect: false }
+        },
+        interaction: { mode: 'index', intersect: false }
+      }
+    });
+  } catch (e) {
+    console.error('Trends load failed:', e);
+  }
+}
+
+async function loadStats() {
+  try {
+    const data = await fetch('/api/stats').then(r => r.json());
+
+    const bestDayData = data.best_day?.data?.E10?.bestDay;
+    const worstDayData = data.best_day?.data?.E10?.worstDay;
+    const allDays = data.best_day?.data?.E10?.allDays || [];
+
+    if (bestDayData) {
+      document.getElementById('bestDay').textContent = bestDayData.dayName;
+      const saving = worstDayData ? (worstDayData.avgPricePence - bestDayData.avgPricePence).toFixed(1) : '?';
+      document.getElementById('bestDayDetail').textContent = `~${saving}p cheaper than ${worstDayData?.dayName || 'worst day'}`;
+      document.getElementById('tipBestDay').textContent = bestDayData.dayName;
+      document.getElementById('tipBestDayDetail').textContent = `Fill up ${bestDayData.dayName} to save ~${saving}p/litre vs ${worstDayData?.dayName}`;
+    }
+    if (worstDayData) {
+      document.getElementById('tipWorstDay').textContent = worstDayData.dayName;
+      document.getElementById('tipWorstDayDetail').textContent = `Average ${worstDayData.avgPricePence.toFixed(1)}p nationally — avoid if you can`;
+    }
+
+    if (allDays.length) {
+      const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+      const sortedDays = [...allDays].sort((a,b) => a.dayOfWeek - b.dayOfWeek);
+      const ctx = document.getElementById('dayChart').getContext('2d');
+      if (dayChart) dayChart.destroy();
+      dayChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: sortedDays.map(d => dayNames[d.dayOfWeek]),
+          datasets: [{
+            label: 'Avg E10 (p)',
+            data: sortedDays.map(d => d.avgPricePence),
+            backgroundColor: sortedDays.map(d =>
+              d.dayOfWeek === bestDayData?.dayOfWeek ? '#16a34a' :
+              d.dayOfWeek === worstDayData?.dayOfWeek ? '#dc2626' : '#93c5fd'
+            ),
+            borderRadius: 6,
+            borderSkipped: false
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          scales: {
+            y: { beginAtZero: false, grid: { color: 'rgba(0,0,0,.04)' }, ticks: { color: '#9ca3af' } },
+            x: { grid: { display: false }, ticks: { color: '#9ca3af' } }
+          },
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+
+    const brands = (data.brands?.brands || []).slice(0, 10).filter(b => b.averageE10);
+    if (brands.length) {
+      const sortedBrands = [...brands].sort((a, b) => a.averageE10 - b.averageE10);
+      document.getElementById('tipBrand').textContent = sortedBrands[0].name;
+      document.getElementById('tipBrandDetail').textContent = `${sortedBrands[0].averageE10}p E10, ${sortedBrands[0].averageDiesel}p diesel nationally`;
+
+      const ctx = document.getElementById('brandChart').getContext('2d');
+      if (brandChart) brandChart.destroy();
+      brandChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: sortedBrands.map(b => b.name),
+          datasets: [
+            { label: 'E10', data: sortedBrands.map(b => b.averageE10), backgroundColor: '#4ade80', borderRadius: 4, borderSkipped: false },
+            { label: 'Diesel', data: sortedBrands.map(b => b.averageDiesel), backgroundColor: '#60a5fa', borderRadius: 4, borderSkipped: false }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+          scales: {
+            x: { beginAtZero: false, grid: { color: 'rgba(0,0,0,.04)' }, ticks: { color: '#9ca3af' } },
+            y: { grid: { display: false }, ticks: { color: '#9ca3af', font: { size: 11 } } }
+          },
+          plugins: { legend: { position: 'top', labels: { usePointStyle: true } } }
+        }
+      });
+    }
+  } catch (e) {
+    console.error('Stats load failed:', e);
+  }
+}
+
+async function loadCrude() {
+  try {
+    const data = await fetch('/api/crude').then(r => r.json());
+    const info = document.getElementById('crudeInfo');
+    if (data.available) {
+      info.textContent = `$${data.price}/barrel (£${(data.price * data.gbp_usd).toFixed(2)})`;
+    } else {
+      info.innerHTML = `${data.message}. <a href="${data.link}" target="_blank">Check live →</a>`;
+    }
+  } catch (e) {
+    document.getElementById('crudeInfo').textContent = 'Crude data unavailable';
+  }
+}
+
+// ── Refresh with animation ──
+function refreshAll(btn) {
+  if (btn) btn.classList.add('spinning');
+  Promise.all([loadStations(), loadTrends(), loadStats(), loadCrude()]).finally(() => {
+    if (btn) btn.classList.remove('spinning');
+  });
+}
+
+// ── Init ──
+const dateAdapterScript = document.createElement('script');
+dateAdapterScript.src = 'https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3/dist/chartjs-adapter-date-fns.bundle.min.js';
+dateAdapterScript.onload = () => {
+  initMap();
+  refreshAll(null);
+  setInterval(() => refreshAll(null), 300000);
+};
+document.head.appendChild(dateAdapterScript);
+
+// Close modal on backdrop click
+document.getElementById('historyModal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeHistoryModal();
+});
+</script>
+</body>
+</html>
