@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FuelPulse — Live Fuel Prices Ayr &amp; Ayrshire</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/WispAyr/wispayr-design@main/css/wispayr.css">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
@@ -14,155 +12,6 @@
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3"></script>
 <script>if(window.Chart){Chart.defaults.locale="en-GB";}</script>
 <style>
-/* ═══ Enterprise HUD Override — WispAyr token remapping ═══ */
-:root, [data-theme="dark"] {
-  --w-bg: #060a12;
-  --w-bg-card: rgba(16,24,40,.75);
-  --w-bg-elevated: rgba(22,30,48,.8);
-  --w-bg-blue: rgba(34,211,238,.06);
-  --w-bg-cyan: rgba(34,211,238,.06);
-  --w-bg-green: rgba(16,185,129,.06);
-  --w-bg-orange: rgba(245,158,11,.06);
-  --w-bg-red: rgba(239,68,68,.06);
-  --w-bg-purple: rgba(139,92,246,.06);
-  --w-border: rgba(51,65,85,.25);
-  --w-text: #e2e8f0;
-  --w-text-muted: #64748b;
-  --w-text-light: #334155;
-  --w-blue: #22d3ee;
-  --w-blue-dark: #0891b2;
-  --w-blue-light: #67e8f9;
-  --w-cyan: #22d3ee;
-  --w-green: #10b981;
-  --w-green-light: #34d399;
-  --w-orange: #f59e0b;
-  --w-red: #ef4444;
-  --w-purple: #a78bfa;
-  --w-radius: 6px;
-  --w-radius-sm: 4px;
-  --w-radius-xs: 4px;
-  --w-shadow-sm: 0 1px 2px rgba(0,0,0,.3);
-  --w-shadow-md: 0 4px 12px rgba(0,0,0,.4);
-  --w-shadow-lg: 0 8px 32px rgba(0,0,0,.5);
-  --w-transition: .2s ease;
-  --mono: 'JetBrains Mono','SF Mono','Fira Code','Consolas',monospace;
-  --sans: 'Space Grotesk','Inter',-apple-system,sans-serif;
-}
-[data-theme="light"] {
-  --w-bg: #f3f4f8;
-  --w-bg-card: #ffffff;
-  --w-bg-elevated: #f7f8fc;
-  --w-border: rgba(0,0,0,.07);
-  --w-text: #12131a;
-  --w-text-muted: #5c6078;
-  --w-text-light: #9094a6;
-  --w-blue: #0891b2;
-  --w-radius: 6px;
-  --w-radius-sm: 4px;
-  --w-radius-xs: 4px;
-}
-
-/* Enterprise base overrides */
-body {
-  font-family: var(--sans) !important;
-  background-image: linear-gradient(rgba(34,211,238,.015) 1px, transparent 1px), linear-gradient(90deg, rgba(34,211,238,.015) 1px, transparent 1px) !important;
-  background-size: 60px 60px !important;
-}
-[data-theme="dark"] body { background-color: #060a12 !important; }
-
-/* Header — command bar */
-.w-header { backdrop-filter: blur(20px) !important; }
-[data-theme="dark"] .w-header { background: rgba(6,10,18,.92) !important; border-color: rgba(51,65,85,.25) !important; }
-
-/* Typography overrides */
-h1, h2, h3, h4, .app-title h1, .stat-value, .price-value, .hero-price { font-family: var(--sans) !important; }
-.app-title h1 span { color: var(--w-cyan) !important; }
-.stat-label, .stat-sub, .fuel-select, .btn-refresh, .toolbar-controls,
-.supply-detail, .supply-label, .ctx-value, .refresh-info,
-.station-distance, .station-address, .station-updated,
-.price-label, .price-change, .price-sub,
-.trend-label, .chart-label, .prism-label, .prism-sub,
-.sighting-time, .sighting-meta, .tab-btn,
-.cheapest-meta, .cheapest-sub, .map-legend-label,
-code, .mono, [class*="meta"], [class*="detail"], [class*="updated"],
-.card-footer, .card-time, .card-source { font-family: var(--mono) !important; }
-
-/* All small labels mono uppercase */
-.supply-label, .stat-label, .prism-label, .trend-label, .cheapest-label,
-.tab-btn, .fuel-select, .btn-refresh {
-  letter-spacing: .5px !important;
-  font-size: 11px !important;
-}
-
-/* HUD corner brackets on major cards */
-.station-card, .prism-card, .stat-card, .chart-wrap, .prism-section,
-.cheapest-card, .trend-card, .sightings-card {
-  position: relative !important;
-}
-.station-card::before, .prism-card::before, .stat-card::before,
-.cheapest-card::before, .trend-card::before, .sightings-card::before {
-  content: '' !important; position: absolute !important; top: 4px !important; left: 4px !important;
-  width: 8px !important; height: 8px !important; pointer-events: none !important;
-  border-top: 1px solid var(--w-cyan) !important; border-left: 1px solid var(--w-cyan) !important;
-  opacity: 0 !important; transition: opacity .2s !important; z-index: 1 !important;
-}
-.station-card::after, .prism-card::after, .stat-card::after,
-.cheapest-card::after, .trend-card::after, .sightings-card::after {
-  content: '' !important; position: absolute !important; bottom: 4px !important; right: 4px !important;
-  width: 8px !important; height: 8px !important; pointer-events: none !important;
-  border-bottom: 1px solid var(--w-cyan) !important; border-right: 1px solid var(--w-cyan) !important;
-  opacity: 0 !important; transition: opacity .2s !important; z-index: 1 !important;
-}
-.station-card:hover::before, .station-card:hover::after,
-.prism-card:hover::before, .prism-card:hover::after,
-.stat-card:hover::before, .stat-card:hover::after,
-.cheapest-card:hover::before, .cheapest-card:hover::after,
-.trend-card:hover::before, .trend-card:hover::after,
-.sightings-card:hover::before, .sightings-card:hover::after { opacity: .35 !important; }
-
-/* Buttons — outlined, not filled */
-.btn-refresh { background: transparent !important; border: 1px solid var(--w-cyan) !important; color: var(--w-cyan) !important; }
-.btn-refresh:hover { background: rgba(34,211,238,.08) !important; }
-
-/* Tab buttons */
-.tab-btn { border-radius: 4px !important; font-family: var(--mono) !important; font-size: 11px !important; letter-spacing: .5px !important; text-transform: uppercase !important; }
-.tab-btn.active { background: rgba(34,211,238,.1) !important; color: var(--w-cyan) !important; border-color: rgba(34,211,238,.2) !important; }
-
-/* Fuel select */
-.fuel-select { font-family: var(--mono) !important; font-size: 11px !important; border-radius: 4px !important; }
-.fuel-select:hover, .fuel-select:focus { border-color: var(--w-cyan) !important; }
-
-/* Station cards — tighter, precision */
-.station-card { border-radius: 6px !important; transition: border-color .2s, transform .2s !important; }
-.station-card:hover { border-color: rgba(71,85,105,.4) !important; transform: translateY(-1px) !important; }
-
-/* Price values — clean, not gradient */
-.price-value, .hero-price, .stat-value { color: var(--w-green) !important; -webkit-text-fill-color: var(--w-green) !important; background: none !important; }
-
-/* Supply banner */
-.supply-badge { border-radius: 4px !important; font-family: var(--mono) !important; font-size: 11px !important; letter-spacing: .3px !important; }
-
-/* Chart styling */
-.chart-wrap { border-radius: 6px !important; }
-
-/* Map container */
-#mapContainer, .map-wrap { border-radius: 6px !important; }
-
-/* Prism section */
-.prism-section { border-radius: 6px !important; }
-.prism-card { border-radius: 6px !important; }
-.prism-card::before { border-radius: 0 !important; } /* Override the accent strip if any */
-
-/* Links */
-a { color: var(--w-cyan) !important; }
-a:hover { color: #67e8f9 !important; text-decoration: none !important; }
-
-/* Scrollbar enterprise style */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(51,65,85,.3); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(51,65,85,.5); }
-
 /* ── FuelPulse App Styles (using WispAyr design tokens) ── */
 
 /* App toolbar below shared header */
@@ -349,287 +198,6 @@ a:hover { color: #67e8f9 !important; text-decoration: none !important; }
 .fp-modal-body ul { font-size: 13px; color: var(--w-text-light); padding-left: 20px; margin: 8px 0; line-height: 1.6; }
 .fp-modal-table { width: 100%; font-size: 13px; margin: 12px 0; border-collapse: collapse; }
 .fp-modal-table td { padding: 8px 0; border-bottom: 1px solid var(--w-border); }
-
-/* ── FRIENDLY REDESIGN ── Additive tokens + hero + stat strip + progressive disclosure ── */
-:root {
-  --fuel-hero-price-size: clamp(3.5rem, 8vw, 6rem);
-  --fuel-hero-station-size: clamp(1.25rem, 2.6vw, 1.9rem);
-  --fuel-warm-accent: #f4a261;
-  --fuel-warm-accent-soft: rgba(244,162,97,0.12);
-  --fuel-hero-gradient: linear-gradient(135deg, #2563eb 0%, #1e40af 55%, #1e3a8a 100%);
-  --fuel-card-radius: 20px;
-  --fuel-shadow-warm: 0 10px 40px rgba(37,99,235,0.18), 0 2px 8px rgba(0,0,0,0.04);
-  --fuel-pill-radius: 999px;
-}
-[data-theme="dark"] {
-  --fuel-hero-gradient: linear-gradient(135deg, #1e40af 0%, #1e3a8a 55%, #172554 100%);
-  --fuel-shadow-warm: 0 10px 40px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.3);
-}
-
-/* Greeting line */
-.fuel-greeting {
-  font-size: 15px;
-  color: var(--w-text-muted);
-  text-align: center;
-  margin: 28px 0 14px;
-  font-weight: 500;
-  letter-spacing: -0.1px;
-}
-
-/* Fuel type pills (replaces select in toolbar) */
-.fuel-pills {
-  display: inline-flex;
-  gap: 4px;
-  padding: 4px;
-  background: var(--w-bg-card);
-  border: 1px solid var(--w-border);
-  border-radius: var(--fuel-pill-radius);
-  margin: 0 auto 18px;
-  box-shadow: var(--w-shadow-sm);
-}
-.fuel-pills-wrap { text-align: center; }
-.fuel-pill {
-  border: none;
-  background: transparent;
-  color: var(--w-text-muted);
-  padding: 8px 18px;
-  border-radius: var(--fuel-pill-radius);
-  font-size: 13px;
-  font-weight: 600;
-  font-family: inherit;
-  cursor: pointer;
-  transition: all var(--w-transition);
-  white-space: nowrap;
-}
-.fuel-pill:hover { color: var(--w-text); }
-.fuel-pill.is-active {
-  background: var(--w-blue);
-  color: white;
-  box-shadow: 0 2px 6px rgba(37,99,235,0.35);
-}
-
-/* Hero card — the single wow moment */
-.fuel-hero-card {
-  background: var(--fuel-hero-gradient);
-  border-radius: var(--fuel-card-radius);
-  padding: 34px 36px 30px;
-  margin-bottom: 20px;
-  box-shadow: var(--fuel-shadow-warm);
-  color: white;
-  position: relative;
-  overflow: hidden;
-}
-.fuel-hero-card::before {
-  content: '';
-  position: absolute;
-  top: -60px; right: -60px;
-  width: 220px; height: 220px;
-  background: radial-gradient(circle, rgba(244,162,97,0.18) 0%, transparent 70%);
-  pointer-events: none;
-}
-.fuel-hero-caption {
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
-  opacity: 0.82;
-  text-transform: uppercase;
-  margin-bottom: 6px;
-}
-.fuel-hero-price {
-  font-size: var(--fuel-hero-price-size);
-  font-weight: 800;
-  line-height: 0.95;
-  letter-spacing: -2.5px;
-  margin: 0 0 10px;
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.fuel-hero-price .hero-unit {
-  font-size: 0.32em;
-  font-weight: 600;
-  opacity: 0.75;
-  letter-spacing: 0;
-}
-.fuel-hero-station {
-  font-size: var(--fuel-hero-station-size);
-  font-weight: 700;
-  margin: 0 0 6px;
-  letter-spacing: -0.4px;
-  line-height: 1.15;
-}
-.fuel-hero-meta {
-  font-size: 13px;
-  opacity: 0.82;
-  margin: 0 0 20px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 10px;
-  align-items: center;
-}
-.fuel-hero-meta .sep { opacity: 0.5; }
-.fuel-hero-actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-.fuel-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 48px;
-  padding: 0 22px;
-  border-radius: var(--fuel-pill-radius);
-  font-size: 14px;
-  font-weight: 700;
-  font-family: inherit;
-  cursor: pointer;
-  border: none;
-  text-decoration: none;
-  transition: all var(--w-transition);
-  white-space: nowrap;
-}
-.fuel-btn-primary {
-  background: white;
-  color: var(--w-blue);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-}
-.fuel-btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,0,0,0.2); }
-.fuel-btn-ghost {
-  background: rgba(255,255,255,0.15);
-  color: white;
-  border: 1px solid rgba(255,255,255,0.3);
-  backdrop-filter: blur(6px);
-}
-.fuel-btn-ghost:hover { background: rgba(255,255,255,0.25); }
-
-/* 3-card stat strip (replaces 6-card grid) */
-.fuel-stat-strip {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-bottom: 16px;
-}
-.fuel-stat-card {
-  background: var(--w-bg-card);
-  border: 1px solid var(--w-border);
-  border-radius: var(--fuel-card-radius);
-  padding: 18px 20px;
-  box-shadow: var(--w-shadow-sm);
-  cursor: pointer;
-  transition: all var(--w-transition);
-  text-align: left;
-  font-family: inherit;
-  position: relative;
-  overflow: hidden;
-}
-.fuel-stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.06), 0 2px 6px rgba(244,162,97,0.08);
-  border-color: color-mix(in srgb, var(--fuel-warm-accent) 40%, var(--w-border));
-}
-.fuel-stat-card::after {
-  content: 'ⓘ'; position: absolute; top: 10px; right: 12px;
-  font-size: 11px; color: var(--w-text-muted); opacity: 0.3;
-  transition: opacity var(--w-transition);
-}
-.fuel-stat-card:hover::after { opacity: 0.9; }
-.fuel-stat-card .label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--w-text-muted);
-  margin: 0 0 8px;
-  letter-spacing: 0.1px;
-}
-.fuel-stat-card .value {
-  font-size: 26px;
-  font-weight: 800;
-  color: var(--w-text);
-  margin: 0 0 4px;
-  letter-spacing: -0.6px;
-  line-height: 1.1;
-}
-.fuel-stat-card .value.up { color: var(--w-red); }
-.fuel-stat-card .value.down { color: var(--w-green); }
-.fuel-stat-card .sub {
-  font-size: 12px;
-  color: var(--w-text-light);
-  margin: 0;
-  line-height: 1.35;
-}
-
-/* Progressive disclosure for Prism */
-.fuel-disclosure {
-  background: var(--w-bg-card);
-  border: 1px solid var(--w-border);
-  border-radius: var(--w-radius);
-  margin-bottom: 16px;
-  overflow: hidden;
-  transition: all var(--w-transition);
-}
-.fuel-disclosure[open] { box-shadow: var(--w-shadow-sm); }
-.fuel-disclosure summary {
-  padding: 14px 18px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--w-text);
-  cursor: pointer;
-  list-style: none;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  user-select: none;
-  transition: background var(--w-transition);
-}
-.fuel-disclosure summary::-webkit-details-marker { display: none; }
-.fuel-disclosure summary:hover { background: color-mix(in srgb, var(--w-blue) 4%, transparent); }
-.fuel-disclosure summary::before {
-  content: '▸';
-  display: inline-block;
-  color: var(--w-text-muted);
-  transition: transform var(--w-transition);
-  font-size: 10px;
-}
-.fuel-disclosure[open] summary::before { transform: rotate(90deg); }
-.fuel-disclosure summary .hint {
-  color: var(--w-text-muted);
-  font-weight: 500;
-  font-size: 12px;
-  margin-left: auto;
-}
-.fuel-disclosure-body { padding: 4px 18px 18px; }
-
-/* Coverage microcopy */
-.fuel-coverage-footer {
-  font-size: 12px;
-  color: var(--w-text-muted);
-  text-align: center;
-  margin: 10px 0 24px;
-}
-.fuel-coverage-footer .live-dot {
-  width: 6px; height: 6px; display: inline-block; margin-right: 5px;
-  vertical-align: middle;
-}
-
-/* Hide legacy fuel-select but keep for JS compat */
-.fuel-select { display: none !important; }
-
-/* Mobile */
-@media (max-width: 768px) {
-  .fuel-hero-card { padding: 26px 22px 22px; border-radius: 18px; }
-  .fuel-hero-price { letter-spacing: -1.5px; }
-  .fuel-stat-strip { grid-template-columns: 1fr; gap: 10px; }
-  .fuel-btn { flex: 1 1 auto; padding: 0 16px; }
-  .fuel-hero-actions { flex-direction: row; }
-  .fuel-greeting { font-size: 14px; margin: 18px 0 12px; }
-}
-@media (max-width: 420px) {
-  .fuel-pill { padding: 7px 14px; font-size: 12px; }
-  .fuel-hero-card { padding: 22px 18px 20px; }
-  .fuel-hero-station { font-size: 1.3rem; }
-}
 .fp-modal-table td:first-child { color: var(--w-text-muted); }
 .fp-modal-table td:last-child { text-align: right; font-weight: 600; }
 
@@ -1429,57 +997,7 @@ tbody tr.closed-row td { opacity: 0.35; text-decoration: line-through; }
   .forecast-card-icon { width: 34px; height: 34px; font-size: 12px; }
   .forecast-card-value { font-size: 16px; }
 }
-
-
-
-
-
-/* == Energy Panorama v3 == */
-.ep-section { margin-top: 40px; padding-top: 32px; border-top: 2px solid var(--w-border); }
-.ep-header { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
-.ep-header h2 { font-size: 24px; font-weight: 800; letter-spacing: -0.4px; color: var(--w-text); margin: 0; }
-.ep-badge { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; padding: 3px 9px; border-radius: 99px; background: linear-gradient(135deg, #8b5cf6, #3b82f6); color: #fff; }
-.ep-sub { font-size: 13px; color: var(--w-text-muted); margin-bottom: 20px; }
-.ep-trend-wrap { background: var(--w-bg-card); border: 1px solid var(--w-border); border-radius: var(--w-radius); padding: 20px; margin-bottom: 16px; position: relative; }
-.ep-trend-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
-.ep-trend-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--w-text-muted); }
-.ep-filters { display: flex; gap: 4px; flex-wrap: wrap; }
-.ep-filter { padding: 5px 12px; border-radius: 99px; border: 1px solid var(--w-border); background: var(--w-bg); color: var(--w-text-muted); font-size: 11px; font-weight: 600; cursor: pointer; transition: all 150ms ease; }
-.ep-filter:hover { border-color: var(--w-text-muted); color: var(--w-text); }
-.ep-filter.active { background: var(--w-blue); border-color: var(--w-blue); color: #fff; }
-.ep-chart-container { position: relative; height: 320px; }
-@media(max-width:768px) { .ep-chart-container { height: 260px; } }
-.ep-forecast-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-bottom: 16px; }
-.ep-fc-card { background: var(--w-bg-card); border: 1px solid var(--w-border); border-radius: 10px; padding: 14px 16px; position: relative; }
-.ep-fc-name { font-size: 10px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--w-text-muted); font-weight: 700; margin-bottom: 4px; }
-.ep-fc-price { font-size: 22px; font-weight: 800; color: var(--w-text); font-variant-numeric: tabular-nums; line-height: 1.2; }
-.ep-fc-price small { font-size: 11px; color: var(--w-text-muted); font-weight: 500; }
-.ep-fc-outlook { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px; margin-top: 6px; }
-.ep-fc-outlook.rising { background: rgba(239,68,68,0.1); color: #ef4444; }
-.ep-fc-outlook.falling { background: rgba(34,197,94,0.1); color: #22c55e; }
-.ep-fc-outlook.stable { background: rgba(59,130,246,0.1); color: #3b82f6; }
-.ep-fc-outlook.insufficient { background: rgba(107,114,128,0.1); color: #6b7280; }
-.ep-fc-detail { font-size: 11px; color: var(--w-text-light); margin-top: 4px; }
-.ep-charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
-@media(max-width:768px) { .ep-charts-row { grid-template-columns: 1fr; } }
-.ep-mini-chart { background: var(--w-bg-card); border: 1px solid var(--w-border); border-radius: var(--w-radius); padding: 18px; }
-.ep-mini-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--w-text-muted); font-weight: 700; margin-bottom: 12px; }
-.ep-mini-canvas { position: relative; height: 220px; }
-.ep-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 8px; margin-bottom: 12px; }
-.ep-fuel { background: var(--w-bg-card); border: 1px solid var(--w-border); border-radius: 10px; padding: 10px 12px; position: relative; transition: all 180ms ease; }
-.ep-fuel:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
-.ep-rank { position: absolute; top: 6px; right: 8px; font-size: 10px; color: var(--w-text-muted); font-weight: 700; opacity: 0.5; }
-.ep-name { font-size: 10px; color: var(--w-text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ep-price { font-size: 18px; font-weight: 800; color: var(--w-text); line-height: 1.1; font-variant-numeric: tabular-nums; }
-.ep-price small { font-size: 10px; color: var(--w-text-muted); font-weight: 500; }
-.ep-native { font-size: 10px; color: var(--w-text-light); margin-top: 2px; }
-.ep-cheapest { border-color: #22c55e; }
-.ep-cheapest .ep-rank { color: #22c55e; opacity: 1; }
-.ep-footer { font-size: 11px; color: var(--w-text-muted); text-align: center; margin-top: 8px; }
-.ep-loading { text-align: center; padding: 32px; color: var(--w-text-muted); font-size: 13px; }
-
 </style>
-    <script src="https://analytics.wispayr.online/beacon.js" data-site="fuel" async></script>
 </head>
 <body>
 
@@ -1509,7 +1027,7 @@ tbody tr.closed-row td { opacity: 0.35; text-decoration: line-through; }
 <div class="supply-banner">
   <div class="w-container">
     <div class="supply-badge normal" id="supplyBanner">
-      <span class="supply-label" id="supplyLabel">Checking supply status…</span>
+      <span class="supply-label" id="supplyLabel">Checking supply…</span>
       <span class="supply-detail" id="supplyDetail"></span>
       <div class="supply-stats" id="supplyStats"></div>
     </div>
@@ -1519,74 +1037,83 @@ tbody tr.closed-row td { opacity: 0.35; text-decoration: line-through; }
 <!-- Hero -->
 <div class="hero">
   <div class="w-container">
-    <p class="fuel-greeting" id="fuelGreeting">Finding you the cheapest pump…</p>
-
-    <div class="fuel-pills-wrap">
-      <div class="fuel-pills" role="tablist" aria-label="Fuel type">
-        <button type="button" class="fuel-pill is-active" data-fuel="E10" onclick="selectFuelPill(this,'E10')">Unleaded</button>
-        <button type="button" class="fuel-pill" data-fuel="B7_STANDARD" onclick="selectFuelPill(this,'B7_STANDARD')">Diesel</button>
-        <button type="button" class="fuel-pill" data-fuel="E5" onclick="selectFuelPill(this,'E5')">Super E5</button>
-      </div>
+    <div class="hero-inner">
+      <h2>Live Fuel Prices — Ayr &amp; Ayrshire</h2>
+      <p class="hero-sub">
+        <span class="live-dot"></span>
+        Live prices from <strong id="stationCount">–</strong>&nbsp;local stations
+      </p>
     </div>
 
-    <!-- Hero card — today's cheapest pick -->
-    <article class="fuel-hero-card" id="heroCard">
-      <p class="fuel-hero-caption" id="heroCaption">Cheapest unleaded right now</p>
-      <p class="fuel-hero-price" id="heroPrice">—<span class="hero-unit">/L</span></p>
-      <h2 class="fuel-hero-station" id="heroStation">Finding the cheapest pump…</h2>
-      <p class="fuel-hero-meta" id="heroMeta">We're catching up on prices — check back in a moment.</p>
-      <div class="fuel-hero-actions">
-        <a class="fuel-btn fuel-btn-primary" id="heroDirections" href="#" target="_blank" rel="noopener">🧭 Get directions</a>
-        <a class="fuel-btn fuel-btn-ghost" href="#" id="heroShowMap" onclick="showHeroOnMap(event)">🗺️ See on map</a>
-      </div>
-    </article>
-
-    <!-- 3-card stat strip -->
-    <div class="fuel-stat-strip">
-      <button type="button" class="fuel-stat-card" onclick="explainStat('cheapest_diesel')">
-        <p class="label">Cheapest diesel nearby</p>
-        <p class="value" id="cheapDiesel">—</p>
-        <p class="sub" id="cheapDieselStation">Loading…</p>
-      </button>
-      <button type="button" class="fuel-stat-card" onclick="explainStat('best_day')">
-        <p class="label">Best day to fill up</p>
-        <p class="value" id="bestDay">—</p>
-        <p class="sub" id="bestDayDetail">based on national price data</p>
-      </button>
-      <button type="button" class="fuel-stat-card" onclick="explainStat('trend')">
-        <p class="label">Prices this week</p>
-        <p class="value" id="trendValue">—</p>
-        <p class="sub" id="trendDetail">vs last week</p>
-      </button>
-    </div>
-
-    <!-- The bigger picture (Prism, lazy-loaded) -->
-    <details class="fuel-disclosure" id="prismDisclosure" ontoggle="onPrismToggle(this)">
-      <summary>
-        The bigger picture
-        <span class="hint">UK averages · your tank · cost per mile</span>
-      </summary>
-      <div class="fuel-disclosure-body">
-        <div class="prism-grid" id="prismGrid">
-          <div class="prism-skeleton"><div class="skel-line sm"></div><div class="skel-line lg"></div><div class="skel-line sm"></div></div>
-          <div class="prism-skeleton"><div class="skel-line sm"></div><div class="skel-line lg"></div><div class="skel-line sm"></div></div>
-          <div class="prism-skeleton"><div class="skel-line sm"></div><div class="skel-line lg"></div><div class="skel-line sm"></div></div>
-          <div class="prism-skeleton"><div class="skel-line sm"></div><div class="skel-line lg"></div><div class="skel-line sm"></div></div>
+    <!-- Stat Cards -->
+    <div class="stat-grid">
+      <div class="stat-card" onclick="explainStat('cheapest_unleaded')">
+        <div class="stat-card-header">
+          <span class="stat-label">Cheapest Unleaded</span>
+          <span class="stat-icon green">🥇</span>
         </div>
+        <div class="stat-value green" id="cheapE10">—</div>
+        <div class="stat-detail" id="cheapE10Station">Loading…</div>
       </div>
-    </details>
+      <div class="stat-card" onclick="explainStat('cheapest_diesel')">
+        <div class="stat-card-header">
+          <span class="stat-label">Cheapest Diesel</span>
+          <span class="stat-icon blue">🥇</span>
+        </div>
+        <div class="stat-value blue" id="cheapDiesel">—</div>
+        <div class="stat-detail" id="cheapDieselStation">Loading…</div>
+      </div>
+      <div class="stat-card" onclick="explainStat('area_average')">
+        <div class="stat-card-header">
+          <span class="stat-label">Area Average (E10)</span>
+          <span class="stat-icon cyan">📊</span>
+        </div>
+        <div class="stat-value" id="avgE10">—</div>
+        <div class="stat-detail" id="avgE10Detail">Loading…</div>
+      </div>
+      <div class="stat-card" onclick="explainStat('best_day')">
+        <div class="stat-card-header">
+          <span class="stat-label">Best Day to Fill Up</span>
+          <span class="stat-icon amber">📅</span>
+        </div>
+        <div class="stat-value" id="bestDay">—</div>
+        <div class="stat-detail" id="bestDayDetail">Loading…</div>
+      </div>
+      <div class="stat-card" onclick="explainStat('trend')">
+        <div class="stat-card-header">
+          <span class="stat-label">7-Day Trend</span>
+          <span class="stat-icon purple">📈</span>
+        </div>
+        <div class="stat-value" id="trendValue">—</div>
+        <div class="stat-detail" id="trendDetail">Loading…</div>
+      </div>
+      <div class="stat-card" onclick="explainStat('traffic')">
+        <div class="stat-card-header">
+          <span class="stat-label">Traffic Impact</span>
+          <span class="stat-icon amber">🚦</span>
+        </div>
+        <div class="stat-value" id="trafficImpact">—</div>
+        <div class="stat-detail" id="trafficImpactDetail">Stations affected by congestion</div>
+      </div>
+    </div>
 
-<p class="fuel-coverage-footer">
-      <span class="live-dot"></span>
-      Tracking <strong id="stationCount">—</strong> stations across Ayr &amp; south Ayrshire · refreshes every 5 min
-    </p>
+    <!-- Prism Intelligence Section -->
+    <div class="prism-section">
+      <div class="prism-title">🔬 Prism Derived Intelligence</div>
+      <div class="prism-grid" id="prismGrid">
+        <div class="prism-skeleton"><div class="skel-line sm"></div><div class="skel-line lg"></div><div class="skel-line sm"></div></div>
+        <div class="prism-skeleton"><div class="skel-line sm"></div><div class="skel-line lg"></div><div class="skel-line sm"></div></div>
+        <div class="prism-skeleton"><div class="skel-line sm"></div><div class="skel-line lg"></div><div class="skel-line sm"></div></div>
+        <div class="prism-skeleton"><div class="skel-line sm"></div><div class="skel-line lg"></div><div class="skel-line sm"></div></div>
+      </div>
+    </div>
 
     <!-- Tabs -->
     <div class="tab-nav" id="tabNav">
       <button class="tab-btn active" data-tab="map" onclick="showTab('map', this)">🗺️ Map</button>
-      <button class="tab-btn" data-tab="table" onclick="showTab('table', this)">📋 All stations</button>
-      <button class="tab-btn" data-tab="trends" onclick="showTab('trends', this)">📈 Price history</button>
-      <button class="tab-btn" data-tab="tips" onclick="showTab('tips', this)">💡 Save money</button>
+      <button class="tab-btn" data-tab="table" onclick="showTab('table', this)">📊 Table</button>
+      <button class="tab-btn" data-tab="trends" onclick="showTab('trends', this)">📈 Trends</button>
+      <button class="tab-btn" data-tab="tips" onclick="showTab('tips', this)">💡 Tips &amp; Savings</button>
     </div>
 
     <!-- Map Tab -->
@@ -1770,7 +1297,7 @@ tbody tr.closed-row td { opacity: 0.35; text-decoration: line-through; }
       </div>
       <div class="accordion-body">
         <p>Prices sourced from the <strong>UK Government Fuel Finder scheme</strong> (launched February 2026). All UK fuel stations must update prices within <strong>30 minutes</strong> of any change — making this the most accurate real-time fuel data available.</p>
-        <p>Data aggregated via <a href="https://fuelcosts.co.uk" target="_blank">fuelcosts.co.uk</a>. Coverage: a 20-mile radius around Ayr town centre — roughly Kilmarnock, Ayr, Prestwick, Maybole, Irvine, Saltcoats, Troon and Largs.</p>
+        <p>Data aggregated via <a href="https://fuelcosts.co.uk" target="_blank">fuelcosts.co.uk</a>. Coverage: 20-mile radius from Ayr town centre, spanning KA1–KA3 (Kilmarnock), KA6–KA8 (Ayr), KA9–KA11 (Irvine &amp; Saltcoats), KA20–KA22 (Troon), and KA30 (Largs).</p>
         <p><strong>Freshness:</strong> 🟢 &lt;24h (confirmed active) · 🟡 24–48h · 🔴 48h+ (possibly closed/out of stock) · ⚫ Confirmed closed</p>
         <p><strong>Opening hours:</strong> Based on station-reported usual hours. Community sightings provide real-time ground truth.</p>
         <div class="source-links">
@@ -1781,55 +1308,6 @@ tbody tr.closed-row td { opacity: 0.35; text-decoration: line-through; }
           <a class="source-link" href="https://oilprice.com/oil-price-charts/" target="_blank">🛢️ Crude Oil</a>
         </div>
       </div>
-    </div>
-
-
-    <!-- Energy Panorama — all fuels below main tabs -->
-    <div class="ep-section" id="epSection">
-      <div class="ep-header">
-        <h2>All Fuels &amp; Energy</h2>
-        <span class="ep-badge">Panorama</span>
-      </div>
-      <p class="ep-sub">Every fuel type normalised to pence per kWh &mdash; compare transport, heating, industrial, and emerging fuels at a glance.</p>
-
-      <!-- Trend Chart -->
-      <div class="ep-trend-wrap">
-        <div class="ep-trend-header">
-          <div class="ep-trend-title">Price trends &amp; forecasts (p/kWh)</div>
-          <div class="ep-filters" id="epFilters">
-            <button class="ep-filter active" data-cat="all" onclick="epFilterCat('all',this)">All</button>
-            <button class="ep-filter" data-cat="transport" onclick="epFilterCat('transport',this)">Transport</button>
-            <button class="ep-filter" data-cat="heating" onclick="epFilterCat('heating',this)">Heating</button>
-          </div>
-        </div>
-        <div class="ep-chart-container">
-          <canvas id="epTrendChart"></canvas>
-        </div>
-      </div>
-
-      <!-- Forecast Cards -->
-      <div class="ep-forecast-grid" id="epForecastGrid">
-        <div class="ep-loading">Loading forecasts&hellip;</div>
-      </div>
-
-      <!-- Bar + Doughnut Charts -->
-      <div class="ep-charts-row">
-        <div class="ep-mini-chart">
-          <div class="ep-mini-title">Cost ranking</div>
-          <div class="ep-mini-canvas"><canvas id="epBarChart"></canvas></div>
-        </div>
-        <div class="ep-mini-chart">
-          <div class="ep-mini-title">By category</div>
-          <div class="ep-mini-canvas"><canvas id="epDoughnutChart"></canvas></div>
-        </div>
-      </div>
-
-      <!-- Fuel Cards Grid -->
-      <div class="ep-grid" id="epCardsGrid">
-        <div class="ep-loading">Loading fuel data&hellip;</div>
-      </div>
-
-      <div class="ep-footer" id="epFooter"></div>
     </div>
 
   </div><!-- /w-container -->
@@ -1905,18 +1383,16 @@ if (window.WispAyr) {
 
 // ── Initial data load (when DOM ready) ──
 document.addEventListener('DOMContentLoaded', () => {
-  if (typeof setGreeting === 'function') setGreeting();
   loadStations();
   loadStats();
   loadTrends();
   loadCrude();
-  // Prism is now lazy-loaded when user expands "The bigger picture"
+  if (typeof loadPrism === 'function') loadPrism();
   if (typeof initMap === 'function') setTimeout(initMap, 200);
   // Auto-refresh every 5 minutes
   setInterval(() => {
     loadStations();
     loadStats();
-    if (typeof setGreeting === 'function') setGreeting();
   }, 300000);
 });
 
@@ -1956,110 +1432,8 @@ function showTab(name, btn) {
 
 // ── Fuel type ──
 function changeFuel() {
-  const sel = document.getElementById('fuelSelect');
-  if (sel) currentFuel = sel.value;
+  currentFuel = document.getElementById('fuelSelect').value;
   loadStations();
-}
-
-// Fuel pill handler (new friendly UI)
-function selectFuelPill(btn, fuel) {
-  document.querySelectorAll('.fuel-pill').forEach(p => p.classList.remove('is-active'));
-  btn.classList.add('is-active');
-  currentFuel = fuel;
-  // keep legacy select in sync for any other code that reads it
-  const sel = document.getElementById('fuelSelect');
-  if (sel) sel.value = fuel;
-  const cap = document.getElementById('heroCaption');
-  if (cap) {
-    const name = { E10: 'unleaded', B7_STANDARD: 'diesel', E5: 'super unleaded' }[fuel] || 'fuel';
-    cap.textContent = `Cheapest ${name} right now`;
-  }
-  loadStations();
-}
-
-// ── Hero pick render ──
-function renderHeroPick(pick, fuel) {
-  const priceEl = document.getElementById('heroPrice');
-  const stationEl = document.getElementById('heroStation');
-  const metaEl = document.getElementById('heroMeta');
-  const dirBtn = document.getElementById('heroDirections');
-  if (!priceEl) return;
-
-  const fuelName = { E10: 'unleaded', B7_STANDARD: 'diesel', E5: 'super unleaded' }[fuel] || 'fuel';
-  const cap = document.getElementById('heroCaption');
-  if (cap) cap.textContent = `Cheapest ${fuelName} right now`;
-
-  if (!pick || pick.price >= 9999 || !pick.station) {
-    priceEl.innerHTML = '—<span class="hero-unit">/L</span>';
-    stationEl.textContent = 'We\u2019re catching up on prices';
-    metaEl.textContent = 'Check back in a few minutes.';
-    if (dirBtn) { dirBtn.removeAttribute('href'); dirBtn.style.opacity = '0.5'; dirBtn.style.pointerEvents = 'none'; }
-    return;
-  }
-
-  const s = pick.station;
-  const priceStr = '£' + (pick.price / 100).toFixed(3);
-  priceEl.innerHTML = `${priceStr}<span class="hero-unit">/L</span>`;
-  stationEl.textContent = pick.name;
-
-  const parts = [];
-  if (s.distance != null) parts.push(`${s.distance.toFixed(1)} mi away`);
-  const openStatus = s.open_status || '';
-  if (openStatus) parts.push(openStatus.toLowerCase().includes('open') ? 'open now' : openStatus.toLowerCase());
-  const updated = (s.prices || []).find(p => p.fuel_type === fuel)?.price_last_updated;
-  if (updated) {
-    const mins = Math.max(0, Math.round((Date.now() - new Date(updated).getTime()) / 60000));
-    const agoStr = mins < 1 ? 'just updated' : mins < 60 ? `updated ${mins} min ago` : `updated ${Math.round(mins/60)}h ago`;
-    parts.push(agoStr);
-  }
-  metaEl.innerHTML = parts.map((p,i) => i === 0 ? p : `<span class="sep">·</span> ${p}`).join(' ');
-
-  const lat = s.lat || (s.location || {}).latitude;
-  const lon = s.lon || (s.location || {}).longitude;
-  if (dirBtn && lat && lon) {
-    dirBtn.href = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}`;
-    dirBtn.style.opacity = '';
-    dirBtn.style.pointerEvents = '';
-    dirBtn.dataset.lat = lat;
-    dirBtn.dataset.lon = lon;
-  }
-  // stash for showHeroOnMap
-  window._heroPickLatLon = (lat && lon) ? [lat, lon] : null;
-}
-
-// Scroll to Map tab and centre on hero pick
-function showHeroOnMap(ev) {
-  if (ev) ev.preventDefault();
-  showTab('map', document.querySelector('[data-tab="map"]'));
-  const tabNav = document.getElementById('tabNav');
-  if (tabNav) tabNav.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  setTimeout(() => {
-    if (map && window._heroPickLatLon) {
-      map.setView(window._heroPickLatLon, 13, { animate: true });
-    }
-  }, 300);
-}
-
-// Time-aware greeting
-function setGreeting() {
-  const el = document.getElementById('fuelGreeting');
-  if (!el) return;
-  const h = new Date().getHours();
-  let msg;
-  if (h >= 5 && h < 12) msg = "Good morning, Ayr — here's where to fill up today.";
-  else if (h >= 12 && h < 17) msg = "Good afternoon — found you the cheapest pump.";
-  else if (h >= 17 && h < 22) msg = "Evening, Ayr — tonight's best price is in.";
-  else msg = "Still driving? Here's the cheapest pump open now.";
-  el.textContent = msg;
-}
-
-// Lazy-load Prism on first expand
-let prismLoaded = false;
-function onPrismToggle(detailsEl) {
-  if (detailsEl.open && !prismLoaded && typeof loadPrism === 'function') {
-    prismLoaded = true;
-    loadPrism();
-  }
 }
 
 // ── Open now filter ──
@@ -2184,11 +1558,7 @@ function updateSupplyBanner(health) {
   if (status === 'alert' && freshPct > 50) status = 'watch';
 
   banner.className = 'supply-badge ' + status;
-  const statusLabel = {
-    normal: 'All good — supply is healthy today',
-    watch: 'Heads up — a few stations are running low',
-    alert: 'Tight supply today — worth filling up if you can'
-  }[status] || 'All good — supply is healthy today';
+  const statusLabel = { normal: 'Supply Normal', watch: 'Supply Watch', alert: 'Supply Alert' }[status] || 'Supply Normal';
   const emoji = { normal: '✓', watch: '⚠', alert: '!' }[status] || '✓';
   label.textContent = `${emoji} ${statusLabel}`;
   detail.textContent = `${freshPct}% fresh · ${totalOpen} open now`;
@@ -2589,43 +1959,32 @@ async function loadStations() {
     updateSupplyBanner(supplyHealth);
     document.getElementById('stationCount').textContent = stations.length;
 
-    let cheapE10 = { price: 9999, name: '', station: null }, cheapDiesel = { price: 9999, name: '', station: null };
-    let cheapCurrent = { price: 9999, name: '', station: null };
+    let cheapE10 = { price: 9999, name: '' }, cheapDiesel = { price: 9999, name: '' };
     let e10Prices = [], dieselPrices = [];
 
     stations.forEach(s => {
       const name = stationName(s);
       const brand = s.brand_name || s.brand || '';
       const isFresh = (s.freshness || {}).status === 'fresh';
-      const displayName = `${brand} ${stationCity(s)}`.trim() || name;
       (s.prices || []).forEach(p => {
         if (p.fuel_type === 'E10' && p.price != null) {
           e10Prices.push(p.price);
-          if (isFresh && p.price < cheapE10.price) cheapE10 = { price: p.price, name: displayName, station: s };
+          if (isFresh && p.price < cheapE10.price) cheapE10 = { price: p.price, name: `${brand} ${stationCity(s)}`.trim() || name };
         }
         if (p.fuel_type === 'B7_STANDARD' && p.price != null) {
           dieselPrices.push(p.price);
-          if (isFresh && p.price < cheapDiesel.price) cheapDiesel = { price: p.price, name: displayName, station: s };
-        }
-        if (p.fuel_type === currentFuel && p.price != null && isFresh && p.price < cheapCurrent.price) {
-          cheapCurrent = { price: p.price, name: displayName, station: s };
+          if (isFresh && p.price < cheapDiesel.price) cheapDiesel = { price: p.price, name: `${brand} ${stationCity(s)}`.trim() || name };
         }
       });
     });
 
-    // Hero pick (reflects currentFuel)
-    renderHeroPick(cheapCurrent, currentFuel);
+    document.getElementById('cheapE10').textContent = cheapE10.price < 9999 ? cheapE10.price.toFixed(1) + 'p' : '—';
+    document.getElementById('cheapE10Station').textContent = cheapE10.name || '—';
+    document.getElementById('cheapDiesel').textContent = cheapDiesel.price < 9999 ? cheapDiesel.price.toFixed(1) + 'p' : '—';
+    document.getElementById('cheapDieselStation').textContent = cheapDiesel.name || '—';
 
-    // Stat strip (diesel) — guard in case element removed
-    const cd = document.getElementById('cheapDiesel');
-    if (cd) cd.textContent = cheapDiesel.price < 9999 ? cheapDiesel.price.toFixed(1) + 'p' : '—';
-    const cds = document.getElementById('cheapDieselStation');
-    if (cds) cds.textContent = cheapDiesel.name || '—';
-
-    // Legacy elements (may be absent after redesign) — keep writes guarded
-    const ae = document.getElementById('avgE10');
     const avgE10 = e10Prices.length ? (e10Prices.reduce((a, b) => a + b, 0) / e10Prices.length) : null;
-    if (ae) ae.textContent = avgE10 != null ? avgE10.toFixed(1) + 'p' : '—';
+    document.getElementById('avgE10').textContent = avgE10 != null ? avgE10.toFixed(1) + 'p' : '—';
 
     if (e10Prices.length >= 2) {
       const maxE10 = Math.max(...e10Prices);
@@ -2633,27 +1992,19 @@ async function loadStations() {
       const diff = maxE10 - minE10;
       const tankSaving = (diff / 100 * 55).toFixed(2);
       const annualSaving = (tankSaving * 52).toFixed(0);
-      const aed = document.getElementById('avgE10Detail');
-      if (aed) aed.textContent = `Range: ${minE10.toFixed(1)}p – ${maxE10.toFixed(1)}p (${diff.toFixed(1)}p spread)`;
-      const ts = document.getElementById('tipSavings');
-      if (ts) ts.textContent = `£${tankSaving}`;
-      const tsd = document.getElementById('tipSavingsDetail');
-      if (tsd) tsd.textContent = `Save £${tankSaving} per 55L tank — that's ${diff.toFixed(1)}p/L between cheapest and priciest`;
-      const ta = document.getElementById('tipAnnual');
-      if (ta) ta.textContent = `£${annualSaving}/yr`;
+      document.getElementById('avgE10Detail').textContent = `Range: ${minE10.toFixed(1)}p – ${maxE10.toFixed(1)}p (${diff.toFixed(1)}p spread)`;
+      document.getElementById('tipSavings').textContent = `£${tankSaving}`;
+      document.getElementById('tipSavingsDetail').textContent = `Save £${tankSaving} per 55L tank — that's ${diff.toFixed(1)}p/L between cheapest and priciest`;
+      document.getElementById('tipAnnual').textContent = `£${annualSaving}/yr`;
     }
 
-    // Traffic impact summary (demoted — kept for legacy element presence only)
-    const ti = document.getElementById('trafficImpact');
-    if (ti) {
-      const stationsInTraffic = stations.filter(s => s.traffic && s.traffic.score > 0.3).length;
-      ti.textContent = stationsInTraffic > 0 ? stationsInTraffic + ' stations' : 'All Clear';
-      ti.className = 'stat-value' + (stationsInTraffic > 3 ? ' red' : stationsInTraffic > 0 ? ' amber' : ' green');
-      const tid = document.getElementById('trafficImpactDetail');
-      if (tid) tid.textContent = stationsInTraffic > 0
-        ? stationsInTraffic + ' station' + (stationsInTraffic > 1 ? 's' : '') + ' near congestion'
-        : 'No congestion near any station';
-    }
+    // Traffic impact summary
+    const stationsInTraffic = stations.filter(s => s.traffic && s.traffic.score > 0.3).length;
+    document.getElementById('trafficImpact').textContent = stationsInTraffic > 0 ? stationsInTraffic + ' stations' : 'All Clear';
+    document.getElementById('trafficImpact').className = 'stat-value' + (stationsInTraffic > 3 ? ' red' : stationsInTraffic > 0 ? ' amber' : ' green');
+    document.getElementById('trafficImpactDetail').textContent = stationsInTraffic > 0
+      ? stationsInTraffic + ' station' + (stationsInTraffic > 1 ? 's' : '') + ' near congestion'
+      : 'No congestion near any station';
 
     updateMap();
     renderTable();
@@ -2671,30 +2022,12 @@ async function loadTrends() {
 
     const analysis = e10Trends.analysis || {};
     const trendEl = document.getElementById('trendValue');
-    const change7d = analysis.change_7d;
     const arrow = analysis.direction === 'rising' ? '\u2191' : analysis.direction === 'falling' ? '\u2193' : '\u2192';
-    if (trendEl) {
-      if (change7d != null) {
-        const abs = Math.abs(change7d).toFixed(1);
-        trendEl.textContent = `${arrow} ${abs}p`;
-      } else {
-        const label = (analysis.direction || 'Stable').charAt(0).toUpperCase() + (analysis.direction || 'stable').slice(1);
-        trendEl.textContent = `${arrow} ${label}`;
-      }
-      trendEl.className = 'value' + (analysis.direction === 'rising' ? ' up' : analysis.direction === 'falling' ? ' down' : '');
-    }
-    const trendDetail = document.getElementById('trendDetail');
-    if (trendDetail) {
-      if (analysis.anomaly) {
-        trendDetail.textContent = '\u26a0 unusual movement this week';
-      } else if (change7d != null) {
-        if (change7d < -0.3) trendDetail.textContent = 'vs last week — nice 🎉';
-        else if (change7d > 0.3) trendDetail.textContent = 'vs last week — creeping up';
-        else trendDetail.textContent = 'vs last week — pretty steady';
-      } else {
-        trendDetail.textContent = 'vs last week';
-      }
-    }
+    const label = (analysis.direction || 'Stable').charAt(0).toUpperCase() + (analysis.direction || 'stable').slice(1);
+    const rate = analysis.change_7d != null ? ` (${analysis.change_7d > 0 ? '+' : ''}${analysis.change_7d.toFixed(1)}p/wk)` : '';
+    trendEl.textContent = `${arrow} ${label}${rate}`;
+    trendEl.className = 'stat-value' + (analysis.direction === 'rising' ? ' red' : analysis.direction === 'falling' ? ' green' : '');
+    document.getElementById('trendDetail').textContent = analysis.anomaly ? '\u26a0 Unusual price movement' : 'Based on local averages';
     document.getElementById('tipTrend').textContent = analysis.description || '\u2014';
     document.getElementById('tipTrendDetail').textContent = `7-day change: ${(analysis.change_7d || 0) > 0 ? '+' : ''}${(analysis.change_7d || 0).toFixed(1)}p/litre`;
 
@@ -3021,21 +2354,15 @@ async function loadStats() {
     const allDays = data.best_day?.data?.E10?.allDays || [];
 
     if (bestDayData) {
-      const bd = document.getElementById('bestDay');
-      if (bd) bd.textContent = bestDayData.dayName + 's';
+      document.getElementById('bestDay').textContent = bestDayData.dayName;
       const saving = worstDayData ? (worstDayData.avgPricePence - bestDayData.avgPricePence).toFixed(1) : '?';
-      const bdd = document.getElementById('bestDayDetail');
-      if (bdd) bdd.textContent = `usually ${saving}p cheaper than ${worstDayData?.dayName || 'the worst day'}`;
-      const tbd = document.getElementById('tipBestDay');
-      if (tbd) tbd.textContent = bestDayData.dayName;
-      const tbdd = document.getElementById('tipBestDayDetail');
-      if (tbdd) tbdd.textContent = `Fill up ${bestDayData.dayName} to save ~${saving}p/litre vs ${worstDayData?.dayName}`;
+      document.getElementById('bestDayDetail').textContent = `~${saving}p cheaper than ${worstDayData?.dayName || 'worst day'}`;
+      document.getElementById('tipBestDay').textContent = bestDayData.dayName;
+      document.getElementById('tipBestDayDetail').textContent = `Fill up ${bestDayData.dayName} to save ~${saving}p/litre vs ${worstDayData?.dayName}`;
     }
     if (worstDayData) {
-      const twd = document.getElementById('tipWorstDay');
-      if (twd) twd.textContent = worstDayData.dayName;
-      const twdd = document.getElementById('tipWorstDayDetail');
-      if (twdd) twdd.textContent = `Average ${worstDayData.avgPricePence.toFixed(1)}p nationally — avoid if you can`;
+      document.getElementById('tipWorstDay').textContent = worstDayData.dayName;
+      document.getElementById('tipWorstDayDetail').textContent = `Average ${worstDayData.avgPricePence.toFixed(1)}p nationally — avoid if you can`;
     }
 
     if (allDays.length) {
@@ -3218,17 +2545,17 @@ function explainStat(key) {
       title: '🥇 Cheapest Unleaded',
       body: `<p>The lowest advertised unleaded (E10) petrol price across all monitored stations within ~20 miles of Ayr.</p>
         <h3>How it's sourced</h3>
-        <p>Every big UK fuel retailer now publishes their current prices publicly through <strong>the UK's fuel transparency scheme</strong> — they have to update within 30 minutes of any change. We pull those feeds on a rolling schedule.</p>
-        <h3>What we count</h3>
-        <ul><li>Stations within about 20 miles of Ayr town centre</li><li>Standard unleaded (E10 / 95 RON)</li><li>Only stations with prices updated in the last 48 hours</li></ul>
-        <h3>A small caveat</h3>
-        <p>Retailers sometimes post one price then charge another at the pump. If you spot a difference, tap a station row in All Stations and send us a community report.</p>`,
+        <p>Prices come from the official <strong>UK Competition and Markets Authority (CMA) scheme</strong> — every major fuel retailer publishes their current prices to a public API within 30 minutes of a change. We poll each retailer's feed on a rolling schedule.</p>
+        <h3>What counts</h3>
+        <ul><li>All stations within 20 miles of Ayr centre</li><li>Standard E10 grade (regular unleaded, 95 RON)</li><li>Only stations with data updated in the last 48 hours</li></ul>
+        <h3>Caveats</h3>
+        <p>Retailers can post prices and then change them at the pump — if you see a discrepancy, submit a sighting via the station modal on the Table tab.</p>`,
     },
     cheapest_diesel: {
       title: '🥇 Cheapest Diesel',
       body: `<p>The lowest advertised diesel (B7) price across all monitored stations within ~20 miles of Ayr.</p>
         <h3>How it's sourced</h3>
-        <p>Same transparency scheme as petrol — retailers post their current prices publicly and we aggregate them.</p>
+        <p>Same CMA scheme as petrol — retailers post current prices to public feeds, we aggregate them.</p>
         <h3>Why diesel is often higher</h3>
         <p>In the UK, diesel is typically 3-8p per litre more expensive than petrol due to a combination of refinery margins, demand from heavy vehicles/commercial users, and supply dynamics. Gaps above 15p are unusual and signal market stress.</p>`,
     },
@@ -3380,257 +2707,6 @@ document.addEventListener('keydown', e => {
     if (fp && fp.classList.contains('open')) closeFpModal();
   }
 });
-
-
-
-
-
-
-// == Energy Panorama v3 — trend chart + forecasts ==
-let _epTrendChart = null, _epBar = null, _epDoughnut = null;
-let _epPanoramaData = null, _epForecastData = null;
-let _epCurrentCat = 'all';
-
-(async function initEP() {
-  await new Promise(r => setTimeout(r, 3500));
-  if (typeof Chart === 'undefined') { setTimeout(initEP, 2000); return; }
-  loadEPData();
-})();
-
-async function loadEPData() {
-  const [panRes, fcRes] = await Promise.allSettled([
-    fetch('/api/energy-panorama').then(r => r.ok ? r.json() : null),
-    fetch('/api/fuel-forecast').then(r => r.ok ? r.json() : null),
-  ]);
-  _epPanoramaData = panRes.status === 'fulfilled' && panRes.value ? panRes.value.data : null;
-  _epForecastData = fcRes.status === 'fulfilled' && fcRes.value ? fcRes.value.data : null;
-
-  if (!_epPanoramaData || !_epPanoramaData.fuels || _epPanoramaData.fuels.length === 0) {
-    document.getElementById('epCardsGrid').innerHTML = '<div class="ep-loading">Energy data collecting &mdash; check back shortly.</div>';
-    setTimeout(loadEPData, 30000);
-    return;
-  }
-  renderEPAll();
-}
-
-function renderEPAll() {
-  renderEPCards(_epPanoramaData);
-  renderEPBarDoughnut(_epPanoramaData);
-  renderEPTrend(_epForecastData, _epCurrentCat);
-  renderEPForecasts(_epForecastData);
-}
-
-// ── Fuel cards ──
-function renderEPCards(d) {
-  const catColors = { transport:'#3b82f6', heating:'#f59e0b', agriculture:'#22c55e', aviation:'#8b5cf6', marine:'#06b6d4', commodity:'#ec4899', other:'#6b7280' };
-  let cards = '';
-  for (const f of d.fuels) {
-    if (f.p_per_kwh == null) continue;
-    const rank = d.ranking.findIndex(r => r.id === f.id) + 1;
-    const col = catColors[f.category] || catColors.other;
-    const best = rank === 1 ? ' ep-cheapest' : '';
-    cards += '<div class="ep-fuel' + best + '" style="border-left:3px solid ' + col + '">' +
-      '<div class="ep-rank">#' + rank + '</div>' +
-      '<div class="ep-name">' + f.label + '</div>' +
-      '<div class="ep-price">' + f.p_per_kwh + '<small> p/kWh</small></div>' +
-      (f.native_price != null ? '<div class="ep-native">' + f.native_price + ' ' + (f.native_unit||'') + '</div>' : '') +
-      '</div>';
-  }
-  document.getElementById('epCardsGrid').innerHTML = cards;
-  document.getElementById('epFooter').innerHTML = d.fuel_count + ' fuel types tracked &middot; normalised to pence per kWh &middot; Siphon + Prism';
-}
-
-// ── Bar + Doughnut ──
-function renderEPBarDoughnut(d) {
-  const catColors = { transport:'#3b82f6', heating:'#f59e0b', agriculture:'#22c55e', aviation:'#8b5cf6', marine:'#06b6d4', commodity:'#ec4899', other:'#6b7280' };
-  const catLabels = { transport:'Transport', heating:'Heating', agriculture:'Agriculture', aviation:'Aviation', marine:'Marine', commodity:'Commodity' };
-  const fp = d.fuels.filter(f => f.p_per_kwh != null);
-
-  // Bar
-  const barCtx = document.getElementById('epBarChart');
-  if (_epBar) _epBar.destroy();
-  _epBar = new Chart(barCtx, {
-    type: 'bar',
-    data: {
-      labels: fp.map(f => f.label),
-      datasets: [{ data: fp.map(f => f.p_per_kwh), backgroundColor: fp.map(f => (catColors[f.category]||catColors.other)+'99'), borderColor: fp.map(f => catColors[f.category]||catColors.other), borderWidth: 1.5, borderRadius: 4 }]
-    },
-    options: { indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>c.raw.toFixed(2)+'p/kWh'}}}, scales:{x:{title:{display:true,text:'Pence per kWh',font:{size:11}},grid:{color:'rgba(128,128,128,0.1)'},ticks:{font:{size:10}}},y:{ticks:{font:{size:9},autoSkip:false},grid:{display:false}}} }
-  });
-
-  // Doughnut
-  const catData = {};
-  for (const f of fp) { const c = f.category||'other'; if (!catData[c]) catData[c]={total:0,count:0}; catData[c].total += f.p_per_kwh; catData[c].count++; }
-  const cats = Object.entries(catData);
-  const dCtx = document.getElementById('epDoughnutChart');
-  if (_epDoughnut) _epDoughnut.destroy();
-  _epDoughnut = new Chart(dCtx, {
-    type: 'doughnut',
-    data: { labels: cats.map(([k])=>catLabels[k]||k), datasets: [{ data: cats.map(([,v])=>v.count), backgroundColor: cats.map(([k])=>(catColors[k]||catColors.other)+'cc'), borderColor: cats.map(([k])=>catColors[k]||catColors.other), borderWidth: 2 }] },
-    options: { responsive:true, maintainAspectRatio:false, cutout:'55%', plugins:{ legend:{position:'bottom',labels:{font:{size:10},padding:10,usePointStyle:true,pointStyleWidth:8}}, tooltip:{callbacks:{label:c=>{const cat=cats[c.dataIndex]; return c.label+': '+cat[1].count+' fuels (avg '+(cat[1].total/cat[1].count).toFixed(1)+'p/kWh)'}}} } }
-  });
-}
-
-// ── Trend Chart ──
-function renderEPTrend(fcData, catFilter) {
-  const canvas = document.getElementById('epTrendChart');
-  if (!canvas) return;
-  if (_epTrendChart) _epTrendChart.destroy();
-
-  if (!fcData || !fcData.fuels) {
-    // No forecast data yet — show a placeholder message
-    const ctx2d = canvas.getContext('2d');
-    ctx2d.clearRect(0, 0, canvas.width, canvas.height);
-    ctx2d.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--w-text-muted') || '#888';
-    ctx2d.font = '13px system-ui';
-    ctx2d.textAlign = 'center';
-    ctx2d.fillText('Trend data accumulating — forecasts will appear as history builds', canvas.width/2, canvas.height/2);
-    return;
-  }
-
-  const datasets = [];
-  const allDates = new Set();
-
-  for (const [fid, fd] of Object.entries(fcData.fuels)) {
-    if (catFilter !== 'all' && fd.category !== catFilter) continue;
-    const hist = fd.history || [];
-    const fc = fd.forecast || {};
-
-    // History line
-    if (hist.length > 0) {
-      for (const h of hist) allDates.add(h.date);
-      datasets.push({
-        label: fd.label,
-        data: hist.map(h => ({ x: h.date, y: h.value })),
-        borderColor: fd.color,
-        backgroundColor: fd.color + '20',
-        borderWidth: 2,
-        pointRadius: 0,
-        pointHitRadius: 6,
-        tension: 0.3,
-        fill: false,
-      });
-    }
-
-    // Forecast line (dashed)
-    if (fc.available && fc.points) {
-      const fcPoints = fc.points;
-      // Connect forecast to last history point
-      const lastHist = hist.length > 0 ? hist[hist.length-1] : null;
-      const connectData = lastHist ? [{ x: lastHist.date, y: lastHist.value }] : [];
-
-      datasets.push({
-        label: fd.label + ' (forecast)',
-        data: [...connectData, ...fcPoints.map(p => ({ x: p.date, y: p.predicted }))],
-        borderColor: fd.color,
-        borderWidth: 1.5,
-        borderDash: [6, 4],
-        pointRadius: 0,
-        tension: 0.3,
-        fill: false,
-      });
-
-      // Confidence band
-      datasets.push({
-        label: '',
-        data: [...connectData.map(p => ({ x: p.x, y: p.y })), ...fcPoints.map(p => ({ x: p.date, y: p.upper }))],
-        borderColor: 'transparent',
-        backgroundColor: fd.color + '10',
-        pointRadius: 0,
-        fill: '+1',
-        tension: 0.3,
-      });
-      datasets.push({
-        label: '',
-        data: [...connectData.map(p => ({ x: p.x, y: p.y })), ...fcPoints.map(p => ({ x: p.date, y: p.lower }))],
-        borderColor: 'transparent',
-        backgroundColor: 'transparent',
-        pointRadius: 0,
-        fill: false,
-        tension: 0.3,
-      });
-    }
-  }
-
-  if (datasets.length === 0) return;
-
-  _epTrendChart = new Chart(canvas, {
-    type: 'line',
-    data: { datasets },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: 'nearest', axis: 'x', intersect: false },
-      plugins: {
-        legend: { position: 'bottom', labels: { font: { size: 10 }, padding: 8, usePointStyle: true, pointStyleWidth: 8, filter: item => !item.text.includes('forecast') && item.text !== '' } },
-        tooltip: { callbacks: { label: ctx => ctx.dataset.label ? ctx.dataset.label + ': ' + ctx.parsed.y.toFixed(2) + 'p/kWh' : '' } },
-        annotation: {
-          annotations: {
-            today: { type: 'line', xMin: new Date().toISOString().slice(0,10), xMax: new Date().toISOString().slice(0,10), borderColor: 'rgba(128,128,128,0.4)', borderWidth: 1, borderDash: [4,4], label: { display: true, content: 'Today', position: 'start', font: { size: 9 }, color: 'rgba(128,128,128,0.7)', backgroundColor: 'transparent' } }
-          }
-        }
-      },
-      scales: {
-        x: { type: 'time', time: { unit: 'week', displayFormats: { week: 'd MMM' } }, grid: { color: 'rgba(128,128,128,0.08)' }, ticks: { font: { size: 10 }, maxRotation: 0 } },
-        y: { title: { display: true, text: 'p/kWh', font: { size: 11 } }, grid: { color: 'rgba(128,128,128,0.08)' }, ticks: { font: { size: 10 } } }
-      }
-    }
-  });
-}
-
-// ── Forecast Cards ──
-function renderEPForecasts(fcData) {
-  const grid = document.getElementById('epForecastGrid');
-  if (!fcData || !fcData.fuels) {
-    grid.innerHTML = '<div class="ep-loading">Forecasts will appear as price history builds over the coming days.</div>';
-    return;
-  }
-
-  let cards = '';
-  const entries = Object.entries(fcData.fuels).sort((a, b) => {
-    const aP = a[1].forecast?.current || 999;
-    const bP = b[1].forecast?.current || 999;
-    return aP - bP;
-  });
-
-  for (const [fid, fd] of entries) {
-    const fc = fd.forecast || {};
-    const current = fc.current;
-    if (current == null) continue;
-
-    let outlookClass = 'insufficient';
-    let outlookText = 'Building data';
-    let detail = '';
-
-    if (fc.available) {
-      outlookClass = fc.outlook;
-      const arrow = fc.outlook === 'rising' ? '\u2191' : fc.outlook === 'falling' ? '\u2193' : '\u2192';
-      outlookText = arrow + ' ' + fc.outlook.charAt(0).toUpperCase() + fc.outlook.slice(1);
-      const wc = fc.weekly_change;
-      detail = (wc > 0 ? '+' : '') + wc.toFixed(1) + 'p/kWh per week \u00b7 ' + fc.confidence + ' confidence';
-    } else {
-      detail = 'Need more history (' + (fc.data_points || 0) + ' points)';
-    }
-
-    cards += '<div class="ep-fc-card" style="border-left:3px solid ' + fd.color + '">' +
-      '<div class="ep-fc-name">' + fd.label + '</div>' +
-      '<div class="ep-fc-price">' + current.toFixed(1) + '<small> p/kWh</small></div>' +
-      '<div class="ep-fc-outlook ' + outlookClass + '">' + outlookText + '</div>' +
-      '<div class="ep-fc-detail">' + detail + '</div>' +
-      '</div>';
-  }
-
-  grid.innerHTML = cards || '<div class="ep-loading">No forecast data available.</div>';
-}
-
-// ── Category filter ──
-function epFilterCat(cat, btn) {
-  _epCurrentCat = cat;
-  document.querySelectorAll('.ep-filter').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  renderEPTrend(_epForecastData, cat);
-}
-
 </script>
 </body>
 </html>

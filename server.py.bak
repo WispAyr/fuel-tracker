@@ -25,8 +25,6 @@ DEFAULT_LON = -4.629
 DEFAULT_RADIUS = 20
 CACHE_TTL = 300  # 5 minutes
 
-SIPHON_URL = "http://142.202.191.208:3882"
-
 UK_TZ = ZoneInfo("Europe/London")
 
 _cache: dict[str, tuple[float, any]] = {}
@@ -63,21 +61,6 @@ def _init_db():
         )
     """)
     conn.execute("CREATE INDEX IF NOT EXISTS idx_congestion_station_ts ON congestion_history(station_id, timestamp)")
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS town_congestion_history (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            town TEXT NOT NULL,
-            timestamp TEXT NOT NULL,
-            avg_score REAL NOT NULL,
-            max_score REAL NOT NULL,
-            station_count INTEGER NOT NULL,
-            congested_count INTEGER NOT NULL,
-            status TEXT NOT NULL,
-            anomaly INTEGER DEFAULT 0,
-            anomaly_reason TEXT
-        )
-    """)
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_town_ts ON town_congestion_history(town, timestamp)")
     conn.commit()
     conn.close()
 
@@ -618,87 +601,14 @@ async def _log_congestion_history():
                 if traffic["score"] > 0:
                     rows.append((node_id, now_uk, traffic["score"], traffic["status"], traffic["nearby_incidents"]))
 
-            conn = sqlite3.connect(DB_PATH)
             if rows:
+                conn = sqlite3.connect(DB_PATH)
                 conn.executemany(
                     "INSERT INTO congestion_history (station_id, timestamp, score, status, nearby_incidents) VALUES (?,?,?,?,?)",
                     rows,
                 )
-
-            # -- Town-level aggregation --
-            from collections import defaultdict as _defaultdict
-            town_scores = _defaultdict(list)
-            for s in stations:
-                node_id = s.get("node_id")
-                if not node_id:
-                    continue
-                town = s.get("location", {}).get("city", "Unknown").title()
-                lat = s.get("lat", s.get("location", {}).get("latitude", 0))
-                lon = s.get("lon", s.get("location", {}).get("longitude", 0))
-                traffic = _score_station_traffic(lat, lon, zones)
-                town_scores[town].append(traffic["score"])
-
-            now_dt = datetime.now(UK_TZ)
-            current_dow = now_dt.weekday()
-            current_hour = now_dt.hour
-            town_rows = []
-            for town, scores in town_scores.items():
-                avg_score = round(sum(scores) / len(scores), 4)
-                max_score = round(max(scores), 4)
-                station_count = len(scores)
-                congested_count = sum(1 for sc in scores if sc > 0.1)
-
-                if avg_score > 0.5:
-                    status = "heavy"
-                elif avg_score > 0.25:
-                    status = "moderate"
-                elif avg_score > 0:
-                    status = "light"
-                else:
-                    status = "clear"
-
-                # Anomaly detection
-                anomaly = 0
-                anomaly_reason = None
-
-                # Check historical average for same hour + day_of_week
-                # SQLite strftime %w: 0=Sunday, so Monday=1, etc.
-                sqlite_dow = (current_dow + 1) % 7  # Python Mon=0 -> SQLite Mon=1, Sun=0
-                hist_rows = conn.execute(
-                    "SELECT avg_score FROM town_congestion_history WHERE town=? AND cast(strftime('%w', timestamp) as int)=? AND cast(strftime('%H', timestamp) as int)=?",
-                    (town, sqlite_dow, current_hour),
-                ).fetchall()
-
-                if len(hist_rows) >= 3:
-                    hist_avg = sum(r[0] for r in hist_rows) / len(hist_rows)
-                    if hist_avg > 0 and avg_score > hist_avg * 2:
-                        anomaly = 1
-                        anomaly_reason = f"Traffic {avg_score/hist_avg:.1f}x above normal for {DAY_NAMES[current_dow].capitalize()} {current_hour}:00 -- possible panic buying"
-
-                    # Low traffic anomaly
-                    if hist_avg > 0.25 and avg_score < 0.05:
-                        anomaly = 1
-                        anomaly_reason = "Unusually quiet -- possible supply issue or closures"
-
-                # Clustering anomaly: >80% stations congested
-                if station_count >= 3 and congested_count / station_count > 0.8:
-                    cluster_msg = f"{round(congested_count/station_count*100)}% of stations congested -- possible panic buying"
-                    if anomaly_reason:
-                        anomaly_reason = anomaly_reason + "; " + cluster_msg
-                    else:
-                        anomaly_reason = cluster_msg
-                    anomaly = 1
-
-                town_rows.append((town, now_uk, avg_score, max_score, station_count, congested_count, status, anomaly, anomaly_reason))
-
-            if town_rows:
-                conn.executemany(
-                    "INSERT INTO town_congestion_history (town, timestamp, avg_score, max_score, station_count, congested_count, status, anomaly, anomaly_reason) VALUES (?,?,?,?,?,?,?,?,?)",
-                    town_rows,
-                )
-
-            conn.commit()
-            conn.close()
+                conn.commit()
+                conn.close()
         except Exception:
             pass  # Keep the task alive
 
@@ -1076,233 +986,6 @@ async def station_traffic():
     })
 
 
-# ── Town Congestion API ───────────────────────────────
-
-@app.get("/api/towns/congestion")
-async def towns_congestion():
-    """Current town-level congestion overview."""
-    zones = await _fetch_congestion_zones()
-    station_data = await _fetch("/stations", {
-        "lat": DEFAULT_LAT, "lon": DEFAULT_LON,
-        "radius": DEFAULT_RADIUS, "fuel": "E10", "sort": "price",
-    })
-    stations = station_data.get("stations", [])
-    if not stations:
-        return JSONResponse({"towns": [], "overall_avg": 0, "anomaly_towns": [], "timestamp": datetime.now(UK_TZ).isoformat()})
-
-    from collections import defaultdict
-    town_data = defaultdict(list)
-    for s in stations:
-        town = s.get("location", {}).get("city", "Unknown").title()
-        lat = s.get("lat", s.get("location", {}).get("latitude", 0))
-        lon = s.get("lon", s.get("location", {}).get("longitude", 0))
-        traffic = _score_station_traffic(lat, lon, zones)
-        town_data[town].append({
-            "name": s.get("trading_name") or s.get("name", "Unknown"),
-            "score": traffic["score"],
-            "status": traffic["status"],
-        })
-
-    now_dt = datetime.now(UK_TZ)
-    current_dow = now_dt.weekday()
-    current_hour = now_dt.hour
-    conn = sqlite3.connect(DB_PATH)
-
-    towns_list = []
-    all_scores = []
-    anomaly_towns = []
-    for town, station_list in sorted(town_data.items()):
-        scores = [st["score"] for st in station_list]
-        avg_score = round(sum(scores) / len(scores), 4)
-        max_score = round(max(scores), 4)
-        congested = sum(1 for sc in scores if sc > 0.1)
-        all_scores.append(avg_score)
-
-        if avg_score > 0.5:
-            status = "heavy"
-        elif avg_score > 0.25:
-            status = "moderate"
-        elif avg_score > 0:
-            status = "light"
-        else:
-            status = "clear"
-
-        # Check for anomaly from recent history
-        anomaly = False
-        sqlite_dow = (current_dow + 1) % 7
-        hist_rows = conn.execute(
-            "SELECT avg_score FROM town_congestion_history WHERE town=? AND cast(strftime('%w', timestamp) as int)=? AND cast(strftime('%H', timestamp) as int)=?",
-            (town, sqlite_dow, current_hour),
-        ).fetchall()
-        if len(hist_rows) >= 3:
-            hist_avg = sum(r[0] for r in hist_rows) / len(hist_rows)
-            if hist_avg > 0 and avg_score > hist_avg * 2:
-                anomaly = True
-            if hist_avg > 0.25 and avg_score < 0.05:
-                anomaly = True
-        if len(station_list) >= 3 and congested / len(station_list) > 0.8:
-            anomaly = True
-
-        if anomaly:
-            anomaly_towns.append(town)
-
-        towns_list.append({
-            "town": town,
-            "station_count": len(station_list),
-            "avg_score": round(avg_score, 2),
-            "max_score": round(max_score, 2),
-            "congested_stations": congested,
-            "status": status,
-            "anomaly": anomaly,
-            "stations": sorted(station_list, key=lambda x: -x["score"]),
-        })
-
-    conn.close()
-    towns_list.sort(key=lambda x: -x["avg_score"])
-    overall_avg = round(sum(all_scores) / len(all_scores), 2) if all_scores else 0
-
-    return JSONResponse({
-        "towns": towns_list,
-        "overall_avg": overall_avg,
-        "anomaly_towns": anomaly_towns,
-        "timestamp": now_dt.isoformat(),
-    })
-
-
-@app.get("/api/towns/congestion-history")
-async def towns_congestion_history(town: str | None = None, days: int = 7):
-    """Historical town congestion with patterns, predictions, and anomalies."""
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    cutoff = (datetime.now(UK_TZ) - timedelta(days=days)).isoformat()
-
-    if town:
-        rows = conn.execute(
-            "SELECT timestamp, avg_score, max_score, station_count, congested_count, status, anomaly, anomaly_reason FROM town_congestion_history WHERE town=? AND timestamp>=? ORDER BY timestamp ASC",
-            (town, cutoff),
-        ).fetchall()
-    else:
-        rows = conn.execute(
-            "SELECT town, timestamp, avg_score, max_score, station_count, congested_count, status, anomaly, anomaly_reason FROM town_congestion_history WHERE timestamp>=? ORDER BY timestamp ASC",
-            (cutoff,),
-        ).fetchall()
-    conn.close()
-
-    if not town:
-        # All towns summary
-        from collections import defaultdict
-        town_summaries = defaultdict(lambda: {"history": [], "anomalies": []})
-        for r in rows:
-            t = r["town"]
-            entry = {"timestamp": r["timestamp"], "avg_score": r["avg_score"], "status": r["status"], "anomaly": bool(r["anomaly"])}
-            town_summaries[t]["history"].append(entry)
-            if r["anomaly"]:
-                town_summaries[t]["anomalies"].append({"timestamp": r["timestamp"], "reason": r["anomaly_reason"], "score": r["avg_score"]})
-
-        result = []
-        for t, data in sorted(town_summaries.items()):
-            scores = [h["avg_score"] for h in data["history"]]
-            result.append({
-                "town": t,
-                "avg_score": round(sum(scores) / len(scores), 3) if scores else 0,
-                "records": len(data["history"]),
-                "anomalies": data["anomalies"],
-            })
-        return JSONResponse({"days": days, "towns": result})
-
-    if not rows:
-        return JSONResponse({
-            "town": town, "days": days, "history": [], "patterns": [],
-            "prediction_24h": [], "anomalies": [],
-            "message": "No town congestion history yet. Data is collected every 10 minutes.",
-        })
-
-    history = [
-        {"timestamp": r["timestamp"], "avg_score": r["avg_score"], "status": r["status"], "anomaly": bool(r["anomaly"])}
-        for r in rows
-    ]
-
-    anomalies = [
-        {"timestamp": r["timestamp"], "reason": r["anomaly_reason"], "score": r["avg_score"]}
-        for r in rows if r["anomaly"]
-    ]
-
-    # Hourly patterns by (day_of_week, hour)
-    from collections import defaultdict
-    bucket = defaultdict(list)
-    for r in rows:
-        try:
-            ts = datetime.fromisoformat(r["timestamp"])
-            dow = ts.weekday()
-            hour = ts.hour
-            bucket[(dow, hour)].append({"avg_score": r["avg_score"], "congested_count": r["congested_count"]})
-        except (ValueError, TypeError):
-            continue
-
-    patterns = []
-    for (dow, hour), entries in sorted(bucket.items()):
-        avg = round(sum(e["avg_score"] for e in entries) / len(entries), 3)
-        typical_congested = round(sum(e["congested_count"] for e in entries) / len(entries), 1)
-        if avg > 0.5:
-            level = "heavy"
-        elif avg > 0.25:
-            level = "moderate"
-        elif avg > 0:
-            level = "light"
-        else:
-            level = "clear"
-        patterns.append({
-            "day_of_week": dow,
-            "day_name": DAY_NAMES[dow].capitalize(),
-            "hour": hour,
-            "avg_score": avg,
-            "level": level,
-            "typical_congested": typical_congested,
-        })
-
-    # 24h prediction
-    now_uk = datetime.now(UK_TZ)
-    prediction = []
-    for offset_h in range(24):
-        target = now_uk + timedelta(hours=offset_h)
-        dow = target.weekday()
-        hour = target.hour
-        entries = bucket.get((dow, hour), [])
-        if entries:
-            pred_score = round(sum(e["avg_score"] for e in entries) / len(entries), 3)
-        else:
-            all_same_hour = []
-            for (d, h), ent in bucket.items():
-                if h == hour:
-                    all_same_hour.extend(ent)
-            pred_score = round(sum(e["avg_score"] for e in all_same_hour) / len(all_same_hour), 3) if all_same_hour else 0
-
-        if pred_score > 0.5:
-            level = "heavy"
-        elif pred_score > 0.25:
-            level = "moderate"
-        elif pred_score > 0:
-            level = "light"
-        else:
-            level = "clear"
-
-        prediction.append({
-            "time": target.strftime("%Y-%m-%d %H:00"),
-            "predicted_score": pred_score,
-            "level": level,
-        })
-
-    return JSONResponse({
-        "town": town,
-        "days": days,
-        "total_records": len(history),
-        "history": history,
-        "patterns": patterns,
-        "prediction_24h": prediction,
-        "anomalies": anomalies,
-    })
-
-
 # ── Nuro integration (v2.0 streams format) ─────────────
 
 @app.get("/api/nuro")
@@ -1422,38 +1105,6 @@ async def nuro():
     except Exception:
         pass
 
-    # Town congestion stream
-    try:
-        from collections import defaultdict as _dd
-        _town_scores = _dd(list)
-        for s in all_stations:
-            _town = s.get("location", {}).get("city", "Unknown").title()
-            _lat = s.get("lat", s.get("location", {}).get("latitude", 0))
-            _lon = s.get("lon", s.get("location", {}).get("longitude", 0))
-            _tr = _score_station_traffic(_lat, _lon, zones)
-            _town_scores[_town].append(_tr["score"])
-        _town_items = []
-        for _t, _sc in sorted(_town_scores.items(), key=lambda x: -sum(x[1])/len(x[1])):
-            _tavg = round(sum(_sc) / len(_sc), 2)
-            if _tavg > 0.5:
-                _tst = "heavy"
-            elif _tavg > 0.25:
-                _tst = "moderate"
-            elif _tavg > 0:
-                _tst = "light"
-            else:
-                _tst = "clear"
-            _town_items.append(f"{_t}: {_tst} ({_tavg})")
-        streams.append({
-            "id": "town_congestion",
-            "label": "Town Congestion",
-            "type": "list",
-            "value": _town_items[:8],
-            "color": "#8b5cf6",
-        })
-    except Exception:
-        pass
-
     return JSONResponse({
         "version": "2.0",
         "label": "FuelPulse",
@@ -1462,67 +1113,6 @@ async def nuro():
         "streams": streams,
         "updated_at": datetime.now(timezone.utc).isoformat(),
     })
-
-
-# -- Siphon Integration -------------------------------------------------------
-
-async def _fetch_siphon(path: str) -> dict | None:
-    """Fetch from Siphon cache service. Returns None on any failure."""
-    try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            resp = await client.get(f"{SIPHON_URL}{path}")
-            resp.raise_for_status()
-            return resp.json()
-    except Exception:
-        return None
-
-
-PRISM_URL = "http://142.202.191.208:3885"
-
-async def _fetch_prism(path: str) -> dict | None:
-    """Fetch from Prism intelligence layer."""
-    try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            resp = await client.get(f"{PRISM_URL}{path}")
-            resp.raise_for_status()
-            return resp.json()
-    except Exception:
-        return None
-
-
-@app.get("/api/energy-panorama")
-async def energy_panorama():
-    """Cross-fuel energy price comparison via Prism."""
-    data = await _fetch_prism("/api/energy-panorama")
-    if data is None:
-        raise HTTPException(status_code=502, detail="Prism energy panorama unavailable")
-    return JSONResponse(data)
-
-
-
-@app.get("/api/fuel-forecast")
-async def fuel_forecast():
-    """Fuel price forecasts via Prism."""
-    data = await _fetch_prism("/api/fuel-forecast")
-    if data is None:
-        raise HTTPException(status_code=502, detail="Prism fuel forecast unavailable")
-    return JSONResponse(data)
-
-@app.get("/api/fuel-all")
-async def fuel_all():
-    """All fuel prices from Siphon."""
-    data = await _fetch_siphon("/api/fuel/all")
-    if data is None:
-        raise HTTPException(status_code=502, detail="Siphon fuel data unavailable")
-    return JSONResponse(data)
-
-@app.get("/api/uk-average")
-async def uk_average():
-    """UK average fuel prices via Siphon cached feed."""
-    data = await _fetch_siphon("/api/fuel")
-    if data is None:
-        raise HTTPException(status_code=502, detail="Siphon fuel data unavailable")
-    return JSONResponse(data)
 
 
 if __name__ == "__main__":
